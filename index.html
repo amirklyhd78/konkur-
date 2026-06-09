@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>سامانه استراتژیک ارزیابی کنکور</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --base-bg: #f8fafc;
+            --surface-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --brand-cyan: #0284c7;
+            --brand-gold: #cca43b;
+            --border-glow: #e2e8f0;
+            --q-critical: #ef4444; --q-low: #a855f7; --q-medium: #3b82f6; --q-high: #10b981; --q-optimal: #06b6d4;
+        }
+
+        * { box-sizing: border-box; transition: all 0.2s ease; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background-color: var(--base-bg); margin: 0; padding: 12px;
+            color: var(--text-main); font-size: 15px;
+        }
+
+        .app-container { max-width: 100%; display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; }
+
+        /* هدر مینی‌مال عمودی */
+        .app-header {
+            background: linear-gradient(135deg, #0f172a, #1e293b); color: white;
+            padding: 15px; border-radius: 12px; display: flex;
+            flex-direction: column; gap: 10px; align-items: center; text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .header-title h1 { margin: 0; font-size: 18px; font-weight: 800; }
+        .header-title p { margin: 3px 0 0 0; font-size: 11px; color: #94a3b8; }
+        .streak-badge { background: rgba(217,119,6,0.2); border: 1px solid #d97706; padding: 6px 16px; border-radius: 50px; font-weight: bold; color: #f59e0b; font-size: 13px; width: 100%; max-width: 220px; }
+
+        /* بخش آمار کل - ۲ در ۲ برای صفحات عمودی */
+        .metrics-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .metric-card {
+            background: var(--surface-bg); border-radius: 12px; padding: 12px;
+            border: 1px solid var(--border-glow); display: flex; align-items: center; gap: 10px;
+        }
+        .metric-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; background: #e0f2fe; color: #0369a1; flex-shrink: 0; }
+        .metric-data h3 { margin: 0; font-size: 11px; color: var(--text-muted); }
+        .metric-data .num { font-size: 16px; font-weight: 800; margin-top: 2px; }
+
+        /* چیدمان تک ستونه عمودی اصلی مخصوص موبایل */
+        .main-workspace { display: flex; flex-direction: column; gap: 15px; }
+
+        .panel { background: var(--surface-bg); border-radius: 14px; padding: 15px; border: 1px solid var(--border-glow); }
+        .panel-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--brand-cyan); border-bottom: 1px dashed var(--brand-gold); padding-bottom: 6px; }
+
+        /* لیست دروس با اسکرول افقی دکمه‌ای برای ذخیره فضا در حالت عمودی */
+        .subject-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+        .subject-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; cursor: pointer; flex-shrink: 0; scroll-snap-align: start; min-width: 110px; text-align: center; }
+        .subject-card.active { border: 1.5px solid var(--brand-cyan); background: #f0f9ff; box-shadow: 0 2px 6px rgba(2,132,199,0.1); }
+        .subject-card-meta { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: bold; }
+        .subject-card-meta span:last-child { color: var(--brand-cyan); font-size: 13px; }
+
+        /* بخش نمودارها به صورت زیر هم */
+        .visual-deck { display: flex; flex-direction: column; gap: 15px; }
+        .chart-box { height: 200px; position: relative; width: 100%; }
+
+        /* جدول گزارشات پایین با اسکرول */
+        .table-wrapper { overflow-x: auto; max-height: 250px; margin-top: 5px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; min-width: 500px; }
+        th { background: #f1f5f9; padding: 10px; position: sticky; top: 0; font-weight: bold; z-index: 2; }
+        td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+
+        /* 👑 پنجره پاپ‌آپ شیک ثبت اطلاعات (Modal) 👑 */
+        .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(15,23,42,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; padding: 10px; }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        .modal-content { background: var(--surface-bg); width: 100%; max-width: 450px; border-radius: 16px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; border-top: 4px solid var(--brand-cyan); max-height: 90vh; overflow-y: auto; }
+        
+        /* دکمه شناور ایجاد فعالیت جدید */
+        .floating-add-btn { position: fixed; bottom: 20px; left: 20px; width: 56px; height: 56px; background: linear-gradient(135deg, #0369a1, var(--brand-cyan)); color: white; border: 2px solid var(--brand-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; box-shadow: 0 8px 16px rgba(2,132,199,0.3); z-index: 999; }
+        .floating-add-btn:hover { transform: scale(1.05); }
+
+        /* استایل‌های داخل فرم */
+        .form-row { display: flex; flex-direction: column; gap: 0; }
+        .form-group { margin-bottom: 12px; display: flex; flex-direction: column; }
+        label { font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #475569; }
+        input, select { padding: 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: inherit; background-color: #f8fafc; }
+        
+        .segmented-control { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
+        .segmented-control button { flex: 1; border: none; padding: 9px; background: none; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 13px;}
+        .segmented-control button.active { background: white; color: var(--brand-cyan); border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        .quality-matrix { display: flex; gap: 4px; }
+        .quality-box { flex: 1; text-align: center; }
+        .quality-box input { display: none; }
+        .quality-box label { display: block; padding: 10px 2px; border-radius: 6px; color: white; font-weight: bold; font-size: 11px; cursor: pointer; opacity: 0.35; }
+        .quality-box input:checked + label { opacity: 1; transform: scale(1.05); border: 1.5px solid var(--brand-gold); }
+
+        .close-modal { position: absolute; top: 15px; left: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header class="app-header">
+        <div class="header-title">
+            <h1>داشبورد تحلیل استراتژیک مطالعه</h1>
+            <p>نسخه ویژه عمودی گوشی (بدون نیاز به زوم)</p>
+        </div>
+        <div class="streak-badge" id="streakBadge"><i class="fa-solid fa-fire"></i> استمرار مطالعه: <span id="streakCount">0</span> روز</div>
+    </header>
+
+    <section class="metrics-row">
+        <div class="metric-card"><div class="metric-icon"><i class="fa-solid fa-clock"></i></div><div class="metric-data"><h3>کل مطالعه</h3><div class="num" id="mTotalHours">0 ساعت</div></div></div>
+        <div class="metric-card"><div class="metric-icon" style="background:#fef3c7; color:#b45309;"><i class="fa-solid fa-bolt"></i></div><div class="metric-data"><h3>بانک تست</h3><div class="num" id="mTotalTests">0</div></div></div>
+        <div class="metric-card"><div class="metric-icon" style="background:#dcfce7; color:#15803d;"><i class="fa-solid fa-chart-pie"></i></div><div class="metric-data"><h3>میانگین درصد</h3><div class="num" id="mAvgPercent">0٪</div></div></div>
+        <div class="metric-card"><div class="metric-icon" style="background:#f3e8ff; color:#6b21a8;"><i class="fa-solid fa-graduation-cap"></i></div><div class="metric-data"><h3>مسائل نهایی</h3><div class="num" id="mTotalFinals">0</div></div></div>
+    </section>
+
+    <main class="main-workspace">
+        <div class="panel">
+            <div class="panel-title" style="margin-bottom: 8px;"><i class="fa-solid fa-layer-group"></i>سهم کارکرد دروس (لمس و بکشید)</div>
+            <div class="subject-list" id="subjectRowsContainer"></div>
+        </div>
+
+        <div class="visual-deck">
+            <div class="panel">
+                <div class="panel-title"><i class="fa-solid fa-chart-line"></i>حجم کل مطالعه روزانه (ساعت)</div>
+                <div class="chart-box"><canvas id="canvasGlobal"></canvas></div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title" id="lblSubjectChart"><i class="fa-solid fa-chart-column"></i>روند درس انتخابی</div>
+                <div class="chart-box"><canvas id="canvasSubject"></canvas></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title"><i class="fa-solid fa-database"></i>تاریخچه دقیق فعالیت‌های اخیر (اسکرول افقی)</div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr><th>تاریخ</th><th>درس</th><th>نوع</th><th>مدت</th><th>مبحث علمی</th><th>نتیجه پارامتری</th><th>کیفیت</th></tr>
+                        </thead>
+                        <tbody id="tableDataRows"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<button class="floating-add-btn" onclick="openModal()"><i class="fa-solid fa-plus"></i></button>
+
+<div class="modal-overlay" id="formModal">
+    <div class="modal-content">
+        <button class="close-modal" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
+        <div class="panel-title" style="font-size:15px; margin-bottom:15px;"><i class="fa-solid fa-pen-to-square"></i>ثبت گزارش توصیفی فعالیت جدید</div>
+        
+        <div class="segmented-control">
+            <button type="button" class="active" id="modeStud" onclick="switchEngineMode('study')">مطالعه تشریحی</button>
+            <button type="button" id="modeTest" onclick="switchEngineMode('test')">سنجش تستی</button>
+        </div>
+
+        <form id="coreForm">
+            <div class="form-row">
+                <div class="form-group"><label>تاریخ فعالیت</label><input type="date" id="fDate" required></div>
+                <div class="form-group"><label>انتخاب سرفصل درس</label><select id="fSubject" required></select></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>مدت زمان (دقیقه)</label><input type="number" id="fDuration" min="1" required placeholder="مثلاً 90"></div>
+                <div class="form-group" id="testFieldsWrapper" style="display:none;">
+                    <label>تعداد تست / درصد پاسخگویی</label>
+                    <div style="display: flex; gap:5px;"><input type="number" id="fTestCount" placeholder="تعداد تست"><input type="number" id="fPercentage" min="-33" max="100" placeholder="درصد ٪"></div>
+                </div>
+            </div>
+            <div class="form-group"><label>مبحث دقیق علمی مطالعه شده</label><input type="text" id="fTopic" required placeholder="مثلاً: حرکت بر خط راست"></div>
+            <div class="form-group"><label>تعداد حل سوالات نهایی/امتحانی</label><input type="number" id="fFinals" value="0"></div>
+            <div class="form-group">
+                <label>سطح کیفیت ذهنی (رنگ فیدبک)</label>
+                <div class="quality-matrix">
+                    <div class="quality-box"><input type="radio" name="fQuality" id="ql1" value="قرمز" checked><label for="ql1" style="background:var(--q-critical)">قرمز</label></div>
+                    <div class="quality-box"><input type="radio" name="fQuality" id="ql2" value="بنفش"><label for="ql2" style="background:var(--q-low)">بنفش</label></div>
+                    <div class="quality-box"><input type="radio" name="fQuality" id="ql3" value="آبی"><label for="ql3" style="background:var(--q-medium)">آبی</label></div>
+                    <div class="quality-box"><input type="radio" name="fQuality" id="ql4" value="سبز"><label for="ql4" style="background:var(--q-high)">سبز</label></div>
+                    <div class="quality-box"><input type="radio" name="fQuality" id="ql5" value="فیروزه‌ای"><label for="ql5" style="background:var(--q-optimal)">فیروزه</label></div>
+                </div>
+            </div>
+            <button type="submit" class="btn-prime" style="background:linear-gradient(135deg, #0369a1, var(--brand-cyan)); color:white; border:none; padding:13px; border-radius:8px; width:100%; font-weight:bold; font-size:14px; cursor:pointer; margin-top:5px;">ذخیره و تزریق داده</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const EXPERT_SUBJECTS = ['زیست‌شناسی', 'شیمی', 'فیزیک', 'ریاضیات', 'فارسی', 'دینی', 'عربی', 'زبان', 'سایر'];
+    let currentEngineMode = 'study'; let focusedSubject = 'زیست‌شناسی';
+    let appDatabase = JSON.parse(localStorage.getItem('EnterpriseStudyDB_v5')) || [];
+    const qColors = { 'قرمز': '#ef4444', 'بنفش': '#a855f7', 'آبی': '#3b82f6', 'سبز': '#10b981', 'فیروزه‌ای': '#06b6d4' };
+    let instanceGlobalChart = null; let instanceSubjectChart = null;
+
+    function openModal() { document.getElementById('formModal').classList.add('active'); }
+    function closeModal() { document.getElementById('formModal').classList.remove('active'); }
+
+    function systemBoot() {
+        const selSub = document.getElementById('fSubject');
+        EXPERT_SUBJECTS.forEach(s => { selSub.innerHTML += `<option value="${s}">${s}</option>`; });
+        document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+        processRenderFlow();
+    }
+
+    function switchEngineMode(mode) {
+        currentEngineMode = mode;
+        const wrapper = document.getElementById('testFieldsWrapper');
+        if(mode === 'test') {
+            document.getElementById('modeTest').classList.add('active'); document.getElementById('modeStud').classList.remove('active');
+            wrapper.style.display = 'block';
+        } else {
+            document.getElementById('modeStud').classList.add('active'); document.getElementById('modeTest').classList.remove('active');
+            wrapper.style.display = 'none';
+        }
+    }
+
+    document.getElementById('coreForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const selectedQuality = document.querySelector('input[name="fQuality"]:checked').value;
+        const record = {
+            uid: 'REC-' + Date.now(), date: document.getElementById('fDate').value, mode: currentEngineMode,
+            subject: document.getElementById('fSubject').value, duration: parseInt(document.getElementById('fDuration').value),
+            percentage: currentEngineMode === 'test' ? parseInt(document.getElementById('fPercentage').value) : null,
+            testCount: currentEngineMode === 'test' ? parseInt(document.getElementById('fTestCount').value) : 0,
+            topic: document.getElementById('fTopic').value, finals: parseInt(document.getElementById('fFinals').value) || 0, quality: selectedQuality
+        };
+        appDatabase.push(record);
+        localStorage.setItem('EnterpriseStudyDB_v5', JSON.stringify(appDatabase));
+        closeModal();
+        document.getElementById('fDuration').value = ''; document.getElementById('fTopic').value = '';
+        processRenderFlow();
+    });
+
+    function changeFocusedSubject(subj) {
+        focusedSubject = subj;
+        document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('active'));
+        if(document.getElementById(`card-row-${subj}`)) document.getElementById(`card-row-${subj}`).classList.add('active');
+        document.getElementById('lblSubjectChart').innerHTML = `<i class="fa-solid fa-chart-column"></i> روند درس: ${subj}`;
+        renderAdvancedCharts();
+    }
+
+    function calculateStudyStreak() {
+        if (appDatabase.length === 0) return 0;
+        const uniqueDates = [...new Set(appDatabase.map(r => r.date))].sort((a, b) => new Date(b) - new Date(a));
+        let streak = 0;
+        let today = new Date().toISOString().split('T')[0];
+        let yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        if (uniqueDates[0] !== today && uniqueDates[0] !== yesterday) return 0;
+        let checkDate = new Date(uniqueDates[0]);
+        for (let i = 0; i < uniqueDates.length; i++) {
+            let diff = (new Date(uniqueDates[i]) - checkDate) / (1000 * 60 * 60 * 24);
+            if (i === 0 || diff === 0 || diff === -1) { streak++; checkDate = new Date(uniqueDates[i]); } else { break; }
+        }
+        return streak;
+    }
+
+    function processRenderFlow() {
+        document.getElementById('streakCount').innerText = calculateStudyStreak();
+        const minutes = appDatabase.reduce((acc, curr) => acc + curr.duration, 0);
+        document.getElementById('mTotalHours').innerText = `${(minutes / 60).toFixed(1)}h`;
+        document.getElementById('mTotalTests').innerText = appDatabase.reduce((acc, curr) => acc + (curr.testCount || 0), 0);
+        document.getElementById('mTotalFinals').innerText = appDatabase.reduce((acc, curr) => acc + (curr.finals || 0), 0);
+        const tests = appDatabase.filter(r => r.mode === 'test');
+        document.getElementById('mAvgPercent').innerText = tests.length > 0 ? `${Math.round(tests.reduce((acc, curr) => acc + curr.percentage, 0) / tests.length)}٪` : '0٪';
+
+        const container = document.getElementById('subjectRowsContainer'); container.innerHTML = '';
+        EXPERT_SUBJECTS.forEach(subj => {
+            const matches = appDatabase.filter(r => r.subject === subj);
+            const mMinutes = matches.reduce((acc, curr) => acc + curr.duration, 0);
+            const activeClass = subj === focusedSubject ? 'active' : '';
+            container.innerHTML += `<div class="subject-card ${activeClass}" id="card-row-${subj}" onclick="changeFocusedSubject('${subj}')"><div class="subject-card-meta"><span>${subj}</span><span>${(mMinutes/60).toFixed(1)}h</span></div></div>`;
+        });
+
+        const tbody = document.getElementById('tableDataRows'); tbody.innerHTML = '';
+        appDatabase.sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 10).forEach(r => {
+            const out = r.mode === 'test' ? `${r.testCount} تست (${r.percentage}٪)` : `نهایی: ${r.finals}`;
+            tbody.innerHTML += `<tr><td>${r.date}</td><td>${r.subject}</td><td>${r.mode==='test'?'تستی':'تشریحی'}</td><td>${r.duration}m</td><td style="font-weight:bold;">${r.topic}</td><td>${out}</td><td><span style="color:${qColors[r.quality]}">●</span> ${r.quality}</td></tr>`;
+        });
+
+        renderAdvancedCharts();
+    }
+
+    function renderAdvancedCharts() {
+        const timeline = {}; appDatabase.forEach(r => { timeline[r.date] = (timeline[r.date] || 0) + (r.duration / 60); });
+        const datesSorted = Object.keys(timeline).sort((a,b) => new Date(a) - new Date(b));
+        if(instanceGlobalChart) instanceGlobalChart.destroy();
+        instanceGlobalChart = new Chart(document.getElementById('canvasGlobal').getContext('2d'), {
+            type: 'line', data: { labels: datesSorted, datasets: [{ data: datesSorted.map(d => timeline[d]), borderColor: '#0284c7', fill: false, tension: 0.2, borderWidth: 2 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+
+        const recordsFocus = appDatabase.filter(r => r.subject === focusedSubject).sort((a,b) => new Date(a.date) - new Date(b.date));
+        if(instanceSubjectChart) instanceSubjectChart.destroy();
+        instanceSubjectChart = new Chart(document.getElementById('canvasSubject').getContext('2d'), {
+            type: 'bar', data: { labels: recordsFocus.map((r, i) => `${r.date.substring(5)}`), datasets: [{ data: recordsFocus.map(r => r.mode === 'test' ? r.percentage : r.duration), backgroundColor: recordsFocus.map(r => qColors[r.quality]) }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+    }
+
+    window.onload = systemBoot;
+</script>
+</body>
+</html>
