@@ -10,371 +10,690 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-main: #0b0f19;
-            --bg-card: #131a2c;
-            --border-line: #1e2943;
-            --text-white: #f8fafc;
-            --text-gray: #94a3b8;
-            --accent-cyan: #38bdf8;
-            --accent-emerald: #34d399;
-            --accent-amber: #fbbf24;
-            --accent-purple: #c084fc;
+            --bg-main: #0b0f19; --bg-card: #131a2c; --border-line: #1e2943;
+            --text-white: #f8fafc; --text-gray: #94a3b8; --accent-cyan: #38bdf8;
+            --accent-emerald: #34d399; --accent-amber: #fbbf24; --accent-purple: #c084fc;
+            --premium-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; transition: all 0.25s ease; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-main); color: var(--text-white); margin: 0; padding: 16px; font-size: 14px; }
-        .app-wrapper { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 90px; }
+        .light-mode {
+            --bg-main: #f1f5f9; --bg-card: #ffffff; --border-line: #cbd5e1;
+            --text-white: #0f172a; --text-gray: #64748b; --accent-cyan: #0284c7;
+            --accent-emerald: #16a34a; --accent-amber: #d97706; --accent-purple: #7c3aed;
+            --premium-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; transition: background 0.3s, border 0.3s; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-main); color: var(--text-white); margin: 0; padding: 12px; font-size: 14px; padding-bottom: 80px; }
+        .app-container { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
         
-        header { text-align: center; padding: 12px 0; border-bottom: 1px solid var(--border-line); }
-        header h1 { margin: 0; font-size: 19px; font-weight: 800; background: linear-gradient(to left, var(--accent-cyan), var(--accent-emerald)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        header { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px; border-bottom: 2px solid var(--border-line); }
+        header h1 { margin: 0; font-size: 17px; font-weight: 800; background: linear-gradient(to left, var(--accent-cyan), var(--accent-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .theme-toggle { background: var(--bg-card); border: 1px solid var(--border-line); color: var(--text-white); padding: 8px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; }
         
-        .counter-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .counter-card { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 10px; }
-        .counter-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: rgba(56,189,248,0.1); color: var(--accent-cyan); }
-        .counter-info h3 { margin: 0; font-size: 11px; color: var(--text-gray); }
-        .counter-info div { font-size: 15px; font-weight: 700; margin-top: 2px; }
-
-        .deck-title { font-size: 13px; font-weight: 700; color: var(--accent-cyan); margin: 5px 0; display: flex; align-items: center; gap: 6px; }
-        .subject-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
-        .subject-row::-webkit-scrollbar { display: none; }
-        .sub-chip { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; min-width: 90px; flex-shrink: 0; }
-        .sub-chip i { font-size: 16px; color: var(--text-gray); }
-        .sub-chip span { font-size: 12px; font-weight: 600; }
-        .sub-chip.analysis-btn { border-color: var(--accent-amber); background: rgba(251,191,36,0.05); }
-        .sub-chip.analysis-btn i { color: var(--accent-amber); }
-
-        .panel-box { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 16px; padding: 16px; }
-        .chart-container { height: 200px; position: relative; margin-top: 10px; }
-
-        .history-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; margin-top: 8px; }
-        .history-table th { background: #1e293b; padding: 8px; color: var(--text-gray); font-weight: 600; }
-        .history-table td { padding: 8px; border-bottom: 1px solid var(--border-line); color: #cbd5e1; }
-
-        .fullscreen-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-main); z-index: 1000; transform: translateY(100%); display: flex; flex-direction: column; padding: 16px; overflow-y: auto; }
-        .fullscreen-overlay.active { transform: translateY(0); }
-        .overlay-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-line); padding-bottom: 12px; margin-bottom: 16px; }
-        .overlay-header h2 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
-        .close-overlay-btn { background: var(--bg-card); border: 1px solid var(--border-line); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
-
-        .note-area { width: 100%; background: #161f38; border: 1px solid var(--border-line); border-radius: 10px; color: white; padding: 12px; font-size: 13px; resize: none; margin-top: 5px; }
-        .btn-action { background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .nav-tabs { display: flex; background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 12px; padding: 4px; overflow: hidden; }
+        .nav-tabs button { flex: 1; background: none; border: none; color: var(--text-gray); padding: 10px; font-weight: bold; font-size: 12px; cursor: pointer; border-radius: 8px; }
+        .nav-tabs button.active { background: linear-gradient(135deg, var(--accent-cyan), #0284c7); color: white; }
         
-        .journal-log { background: #161f38; border-radius: 10px; padding: 10px; margin-top: 10px; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .journal-item { border-bottom: 1px dashed var(--border-line); padding-bottom: 6px; font-size: 12px; }
-        .journal-item:last-child { border: none; }
-        .journal-date { color: var(--accent-cyan); font-weight: bold; margin-bottom: 2px; }
+        .tab-content { display: none; flex-direction: column; gap: 14px; }
+        .tab-content.active { display: flex; }
 
-        .floating-action-trigger { position: fixed; bottom: 24px; left: 24px; width: 56px; height: 56px; background: linear-gradient(135deg, var(--accent-cyan), #0284c7); color: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; box-shadow: 0 8px 20px rgba(56,189,248,0.3); z-index: 999; }
+        .premium-card { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 16px; padding: 14px; box-shadow: var(--premium-shadow); position: relative; overflow: hidden; }
         
-        .form-element { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
-        .form-element label { font-size: 12px; color: var(--text-gray); font-weight: 600; }
-        .form-element input, .form-element select { background: var(--bg-card); border: 1px solid var(--border-line); padding: 10px; border-radius: 8px; color: white; font-size: 13px; }
-        .toggle-switch { display: flex; background: var(--bg-card); padding: 4px; border-radius: 8px; margin-bottom: 14px; border: 1px solid var(--border-line); }
-        .toggle-switch button { flex: 1; border: none; padding: 8px; background: none; font-weight: bold; color: var(--text-gray); cursor: pointer; }
-        .toggle-switch button.active { background: #1e2943; color: var(--accent-cyan); border-radius: 6px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .stat-box { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 14px; padding: 10px; display: flex; align-items: center; gap: 8px; }
+        .stat-box i { font-size: 18px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 10px; background: rgba(56,189,248,0.1); color: var(--accent-cyan); }
 
-        .quality-row { display: flex; gap: 4px; }
-        .quality-row input { display: none; }
-        .quality-row label { flex: 1; text-align: center; padding: 8px 0; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; opacity: 0.3; color: white; }
-        .quality-row input:checked + label { opacity: 1; border: 2px solid white; }
+        .scroller-wrapper { width: 100%; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
+        .scroller-wrapper::-webkit-scrollbar { display: none; }
+        .subject-row { display: flex; gap: 10px; width: max-content; }
+        .subject-badge { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 16px; padding: 12px; width: 85px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; text-align: center; }
+        .subject-badge i { font-size: 26px; }
+        .subject-badge span { font-size: 11px; font-weight: bold; }
+
+        .chart-frame { height: 190px; width: 100%; position: relative; margin-top: 8px; }
+        
+        .heat-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; direction: ltr; margin-top: 10px; }
+        .heat-cell { aspect-ratio: 1; border-radius: 3px; background: var(--border-line); position: relative; cursor: pointer; }
+        .heat-cell:hover::after { content: attr(data-tip); position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); background: #000; color: #fff; padding: 4px 8px; font-size: 10px; border-radius: 4px; white-space: nowrap; z-index: 10; }
+
+        .ranking-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid var(--border-line); }
+        .ranking-item:last-child { border: none; }
+        .medal { font-size: 16px; margin-left: 6px; }
+
+        .table-view { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; }
+        .table-view th { background: rgba(0,0,0,0.1); padding: 8px; color: var(--text-gray); }
+        .table-view td { padding: 8px; border-bottom: 1px solid var(--border-line); }
+        .action-btns i { cursor: pointer; margin: 0 4px; font-size: 13px; }
+        .action-btns .fa-trash { color: #ef4444; }
+        .action-btns .fa-pen { color: var(--accent-amber); }
+
+        .floating-add { position: fixed; bottom: 16px; left: 16px; width: 50px; height: 50px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple)); color: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; box-shadow: 0 8px 20px rgba(56,189,248,0.4); z-index: 100; }
+        
+        .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-main); z-index: 1000; transform: translateY(100%); display: flex; flex-direction: column; padding: 14px; overflow-y: auto; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .overlay.active { transform: translateY(0); }
+        .overlay-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-line); padding-bottom: 10px; margin-bottom: 12px; }
+        .overlay-header h2 { margin: 0; font-size: 15px; }
+
+        .form-grp { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+        .form-grp label { font-size: 11px; color: var(--text-gray); font-weight: bold; }
+        .form-grp input, .form-grp select { background: var(--bg-card); border: 1px solid var(--border-line); padding: 10px; border-radius: 8px; color: var(--text-white); font-size: 13px; }
+        
+        .btn-block { width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent-cyan), #0284c7); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px; margin-top: 6px; }
+        .btn-secondary { background: var(--border-line); color: var(--text-white); margin-top: 6px; }
+
+        .goal-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+        .progress-container { width: 100%; background: var(--border-line); height: 6px; border-radius: 3px; overflow: hidden; margin-top: 3px; }
+        .progress-bar { height: 100%; background: var(--accent-emerald); width: 0%; }
+        
+        .backup-zone { display: flex; gap: 8px; margin-top: 6px; }
+        .backup-zone button { flex: 1; padding: 8px; border-radius: 6px; font-size: 11px; cursor: pointer; border: 1px solid var(--border-line); background: var(--bg-card); color: var(--text-white); }
     </style>
 </head>
 <body>
 
-<div class="app-wrapper">
+<div class="app-container">
     <header>
-        <h1>داشبورد تحلیل استراتژیک مطالعه</h1>
+        <h1>داشبورد تحلیل استراتژیک کنکور پرو</h1>
+        <button class="theme-toggle" onclick="AppUI.toggleTheme()"><i class="fa-solid fa-moon"></i> پوسته</button>
     </header>
 
-    <div class="counter-grid">
-        <div class="counter-card"><div class="counter-icon"><i class="fa-solid fa-hourglass-half"></i></div><div class="counter-info"><h3>کل ساعات مطالعه</h3><div id="topHours">0h</div></div></div>
-        <div class="counter-card"><div class="counter-icon" style="color:var(--accent-emerald); background:rgba(52,211,153,0.1);"><i class="fa-solid fa-crosshair"></i></div><div class="counter-info"><h3>کل تست‌های حل‌شده</h3><div id="topTests">0</div></div></div>
-        <div class="counter-card"><div class="counter-icon" style="color:var(--accent-amber); background:rgba(251,191,36,0.1);"><i class="fa-solid fa-graduation-cap"></i></div><div class="counter-info"><h3>کل تمرینات نهایی</h3><div id="topFinals">0</div></div></div>
-        <div class="counter-card"><div class="counter-icon" style="color:var(--accent-purple); background:rgba(192,132,252,0.1);"><i class="fa-solid fa-fire"></i></div><div class="counter-info"><h3>پیوستگی ممتد</h3><div id="topStreak">0 روز</div></div></div>
+    <div class="nav-tabs">
+        <button id="tabBtn1" class="active" onclick="AppUI.switchTab('mainTab')">ثبت و پایش</button>
+        <button id="tabBtn2" onclick="AppUI.switchTab('analysisTab')">تحلیل استراتژیک</button>
+        <button id="tabBtn3" onclick="AppUI.switchTab('planningTab')">برنامه‌ریزی و هدف</button>
     </div>
 
-    <div>
-        <div class="deck-title"><i class="fa-solid fa-cubes"></i>درس‌ها و آنالیز تخصصی عملکرد</div>
-        <div class="subject-row" id="subjectScroller">
-            <div class="sub-chip analysis-btn" onclick="openGlobalAnalysis()"><i class="fa-solid fa-chart-bar"></i><span>آنالیز کل</span></div>
+    <div id="mainTab" class="tab-content active">
+        <div class="stat-grid">
+            <div class="stat-box"><i class="fa-solid fa-fire"></i><div><div style="font-size:10px; color:var(--text-gray);">استریک فعلی</div><div id="cardStreak" style="font-weight:bold;">0 روز</div></div></div>
+            <div class="stat-box"><i class="fa-solid fa-trophy" style="color:var(--accent-amber);"></i><div><div style="font-size:10px; color:var(--text-gray);">رکورد استریک</div><div id="cardBestStreak" style="font-weight:bold;">0 روز</div></div></div>
         </div>
-    </div>
 
-    <div class="panel-box">
-        <div class="deck-title"><i class="fa-solid fa-chart-line"></i>حجم کل مطالعه روزانه (ساعت)</div>
-        <div class="chart-container"><canvas id="mainDailyChart"></canvas></div>
-    </div>
-
-    <div class="panel-box">
-        <div class="deck-title"><i class="fa-solid fa-chart-gantt"></i>روند مطالعه هفتگی (ساعت)</div>
-        <div class="chart-container"><canvas id="mainWeeklyChart"></canvas></div>
-    </div>
-
-    <div class="panel-box">
-        <div class="deck-title"><i class="fa-solid fa-clock-rotate-left"></i>آخرین فعالیت‌های ثبت‌شده</div>
-        <div style="overflow-x:auto;">
-            <table class="history-table">
-                <thead><tr><th>تاریخ</th><th>درس</th><th>نوع</th><th>مدت</th><th>مبحث علمی</th><th>کارکرد</th></tr></thead>
-                <tbody id="historyTableBody"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<button class="floating-action-trigger" onclick="openInputForm()"><i class="fa-solid fa-plus"></i></button>
-
-<!-- بخش اختصاصی آنالیز کل درس‌ها -->
-<div class="fullscreen-overlay" id="globalAnalysisOverlay">
-    <div class="overlay-header">
-        <h2><i class="fa-solid fa-chart-pie" style="color:var(--accent-amber)"></i>مقایسه و آنالیز جامع تستی و نهایی</h2>
-        <button class="close-overlay-btn" onclick="closeOverlay('globalAnalysisOverlay')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="panel-box" style="margin-bottom:15px;">
-        <div class="deck-title"><i class="fa-solid fa-chart-line"></i>سنجش تستی کل دروس (تعداد تست)</div>
-        <div class="chart-container"><canvas id="chartGlobalTest"></canvas></div>
-    </div>
-    <div class="panel-box">
-        <div class="deck-title"><i class="fa-solid fa-chart-line"></i>سنجش تشریحی کل دروس (تعداد سوال نهایی)</div>
-        <div class="chart-container"><canvas id="chartGlobalFinal"></canvas></div>
-    </div>
-</div>
-
-<!-- بخش اختصاصی هر درس شامل نمودارها و یادداشت -->
-<div class="fullscreen-overlay" id="subjectOverlay">
-    <div class="overlay-header">
-        <h2 id="subjectOverlayTitle">درس</h2>
-        <button class="close-overlay-btn" onclick="closeOverlay('subjectOverlay')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    
-    <div style="display:flex; flex-direction:column; gap:16px;">
-        <div class="panel-box"><div class="deck-title"><i class="fa-solid fa-chart-line"></i>روند حل تست مخصوص درس</div><div class="chart-container"><canvas id="subChartTest"></canvas></div></div>
-        <div class="panel-box"><div class="deck-title"><i class="fa-solid fa-chart-line"></i>روند حل سوالات نهایی مخصوص درس</div><div class="chart-container"><canvas id="subChartFinal"></canvas></div></div>
-        <div class="panel-box"><div class="deck-title"><i class="fa-solid fa-chart-line"></i>روند پیشرفت کیفیت ذهنی (رنگ‌ها)</div><div class="chart-container"><canvas id="subChartQuality"></canvas></div></div>
-        <div class="panel-box"><div class="deck-title"><i class="fa-solid fa-chart-line"></i>تایم و زمان مطالعه (دقیقه)</div><div class="chart-container"><canvas id="subChartTime"></canvas></div></div>
-        
-        <div class="panel-box">
-            <div class="deck-title"><i class="fa-solid fa-book-open"></i>یادداشت‌های اختصاصی روزانه این درس</div>
-            <textarea class="note-area" id="subjectNoteInput" rows="3" placeholder="امروز چطور گذشت؟ چالش‌ها و نکات مثبت را بنویس..."></textarea>
-            <button class="btn-action" onclick="saveSubjectNote()">ثبت یادداشت امروز</button>
-            <div class="journal-log" id="subjectJournalLog"></div>
-        </div>
-    </div>
-</div>
-
-<!-- فرم پاپ آپ ثبت اطلاعات جدید -->
-<div class="fullscreen-overlay" id="inputFormOverlay">
-    <div class="overlay-header">
-        <h2><i class="fa-solid fa-pen-nib"></i>ثبت گزارش عملکرد روزانه</h2>
-        <button class="close-overlay-btn" onclick="closeOverlay('inputFormOverlay')"><i class="fa-solid fa-xmark"></i></button>
-    </div>
-    <div class="toggle-switch">
-        <button id="btnModeStudy" class="active" onclick="setFormMode('study')">مطالعه تشریحی</button>
-        <button id="btnModeTest" onclick="setFormMode('test')">سنجش تستی</button>
-    </div>
-    <form id="dataForm">
-        <div class="form-element"><label>تاریخ فعالیت (شمسی - مثال: 1405/03/19)</label><input type="text" id="insDate" required></div>
-        <div class="form-element"><label>انتخاب درس</label><select id="insSubject" required></select></div>
-        <div class="form-element"><label>مدت زمان فعالیت (دقیقه)</label><input type="number" id="insDuration" min="1" required placeholder="مثلاً 90"></div>
-        <div id="formTestBox" style="display:none; gap:8px; margin-bottom:12px;">
-            <div class="form-element" style="flex:1;"><label>تعداد تست</label><input type="number" id="insTests" value="0"></div>
-            <div class="form-element" style="flex:1;"><label>درصد مکتسبه ٪</label><input type="number" id="insPercent" min="-33" max="100" value="0"></div>
-        </div>
-        <div class="form-element" id="formFinalBox"><label>تعداد حل سوالات نهایی/امتحانی</label><input type="number" id="insFinals" value="0"></div>
-        <div class="form-element"><label>مبحث دقیق علمی مطالعه شده</label><input type="text" id="insTopic" required placeholder="مثال: دینامیک یا ساختار اتم"></div>
-        <div class="form-element">
-            <label>کیفیت ذهنی و تمرکز</label>
-            <div class="quality-row">
-                <input type="radio" name="insQual" id="q1" value="1" checked><label for="q1" style="background:#ef4444;">قرمز</label>
-                <input type="radio" name="insQual" id="q2" value="2"><label for="q2" style="background:#a855f7;">بنفش</label>
-                <input type="radio" name="insQual" id="q3" value="3"><label for="q3" style="background:#3b82f6;">آبی</label>
-                <input type="radio" name="insQual" id="q4" value="4"><label for="q4" style="background:#10b981;">سبز</label>
-                <input type="radio" name="insQual" id="q5" value="5"><label for="q5" style="background:#06b6d4;">فیروزه</label>
+        <div>
+            <div style="font-size:12px; font-weight:bold; margin-bottom:6px;"><i class="fa-solid fa-cubes-stacked"></i> ارزیابی تخصصی به تفکیک دروس</div>
+            <div class="scroller-wrapper">
+                <div class="subject-row" id="subjectScroller"></div>
             </div>
         </div>
-        <button type="submit" class="btn-action">تزریق و ثبت نهایی داده‌ها</button>
+
+        <div class="premium-card">
+            <div style="font-size:12px; font-weight:bold;"><i class="fa-solid fa-calendar-days"></i> تقویم حرارتی عملکرد روزانه (۲۸ روز اخیر)</div>
+            <div class="heat-grid" id="githubHeatmap"></div>
+        </div>
+
+        <div class="premium-card">
+            <div style="font-size:12px; font-weight:bold;"><i class="fa-solid fa-clock-rotate-left"></i> گزارش‌های اخیر با امکان ویرایش سریع</div>
+            <div style="overflow-x:auto; margin-top:8px;">
+                <table class="table-view">
+                    <thead><tr><th>تاریخ</th><th>درس</th><th>ساعت</th><th>تست / نهایی</th><th>مبحث</th><th>عملیات</th></tr></thead>
+                    <tbody id="logTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="analysisTab" class="tab-content">
+        <div class="stat-grid">
+            <div class="stat-box"><i class="fa-solid fa-hourglass-start"></i><div><div style="font-size:10px; color:var(--text-gray);">کل ساعت مطالعه</div><div id="anTotalHours" style="font-weight:bold;">0</div></div></div>
+            <div class="stat-box"><i class="fa-solid fa-bullseye" style="color:var(--accent-emerald);"></i><div><div style="font-size:10px; color:var(--text-gray);">کل تست‌ها</div><div id="anTotalTests" style="font-weight:bold;">0</div></div></div>
+            <div class="stat-box"><i class="fa-solid fa-percentage" style="color:var(--accent-amber);"></i><div><div style="font-size:10px; color:var(--text-gray);">میانگین درصد کل</div><div id="anAvgPercent" style="font-weight:bold;">0٪</div></div></div>
+            <div class="stat-box"><i class="fa-solid fa-brain" style="color:var(--accent-purple);"></i><div><div style="font-size:10px; color:var(--text-gray);">میانگین کیفیت ذهنی</div><div id="anAvgQuality" style="font-weight:bold;">0</div></div></div>
+        </div>
+
+        <div class="premium-card">
+            <div style="font-size:12px; font-weight:bold; margin-bottom:6px;"><i class="fa-solid fa-medal"></i> رتبه‌بندی استراتژیک دروس (بهترین راندمان کایزن)</div>
+            <div id="rankingContainer"></div>
+        </div>
+
+        <div class="premium-card">
+            <div style="font-size:12px; font-weight:bold;"><i class="fa-solid fa-chart-pie"></i> ماتریس و نمودار راداری متوازن دروس کنکور (نرمال‌سازی تعادلی)</div>
+            <div class="chart-frame" style="height:230px;"><canvas id="radarChartCanvas"></canvas></div>
+        </div>
+        
+        <div class="premium-card">
+            <div style="font-size:12px; font-weight:bold;"><i class="fa-solid fa-shield-halved"></i> پشتیبان‌گیری دائمی از اطلاعات دیتابیس</div>
+            <div class="backup-zone">
+                <button onclick="AppStorage.exportBackupData()"><i class="fa-solid fa-download"></i> دانلود فایل بکاپ</button>
+                <button onclick="document.getElementById('fileImportInput').click()"><i class="fa-solid fa-upload"></i> بازیابی فایل بکاپ</button>
+                <input type="file" id="fileImportInput" style="display:none;" onchange="AppStorage.importBackupData(this)">
+            </div>
+        </div>
+    </div>
+
+    <div id="planningTab" class="tab-content">
+        <div class="premium-card">
+            <div style="font-size:13px; font-weight:bold; margin-bottom:10px;"><i class="fa-solid fa-bullseye"></i> تنظیم و پایش اهداف هفتگی هر درس (۷ روز اخیر)</div>
+            <div id="goalsContainer"></div>
+        </div>
+    </div>
+</div>
+
+<button class="floating-add" onclick="AppUI.openFormOverlay()"><i class="fa-solid fa-plus"></i></button>
+
+<div class="overlay" id="formOverlay">
+    <div class="overlay-header">
+        <h2 id="formOverlayTitle">ثبت گزارش کارکرد جدید</h2>
+        <button class="theme-toggle" style="border-radius:50%; width:34px; height:34px; padding:0;" onclick="AppUI.closeOverlay('formOverlay')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="recordForm">
+        <input type="hidden" id="editRecordId">
+        <div class="form-grp"><label>تاریخ فعالیت (مثال: 1405/03/19)</label><input type="text" id="formDate" placeholder="YYYY/MM/DD" required></div>
+        <div class="form-grp"><label>انتخاب درس</label><select id="formSubject" required></select></div>
+        <div class="form-grp"><label>زمان مطالعه (دقیقه)</label><input type="number" id="formDuration" required></div>
+        <div class="form-grp"><label>تعداد تست</label><input type="number" id="formTests" value="0"></div>
+        <div class="form-grp"><label>درصد مکتسبه (٪)</label><input type="number" id="formPercent" value="0" min="-33" max="100"></div>
+        <div class="form-grp"><label>تعداد سوال امتحانی نهایی (تشریحی)</label><input type="number" id="formFinals" value="0"></div>
+        <div class="form-grp"><label>مبحث دقیق علمی</label><input type="text" id="formTopic" placeholder="مثال: ساختار لوویس یا حرکت دایره‌ای" required></div>
+        <div class="form-grp">
+            <label>کیفیت ذهنی و سطح تمرکز (۱ تا ۵)</label>
+            <select id="formQuality">
+                <option value="1">۱ - خیلی ضعیف / پر از پرش ذهن</option>
+                <option value="2">۲ - ضعیف</option>
+                <option value="3">۳ - متوسط</option>
+                <option value="4">۴ - خوب و متمرکز</option>
+                <option value="5">۵ - فوق‌العاده / تمرکز مطلق لیزری</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-block">تزریق داده به هوش داشبورد</button>
     </form>
 </div>
 
+<div class="overlay" id="subjectOverlay">
+    <div class="overlay-header">
+        <h2 id="subjectOverlayTitle">آنالیز عمیق درس</h2>
+        <button class="theme-toggle" style="border-radius:50%; width:34px; height:34px; padding:0;" onclick="AppUI.closeOverlay('subjectOverlay')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+        <div class="stat-grid" id="subStatsGrid"></div>
+        
+        <div class="premium-card">
+            <div style="font-size:11px; font-weight:bold; color:var(--accent-amber);"><i class="fa-solid fa-chart-line"></i> پایش درصدها و میانگین متحرک کایزن (MA)</div>
+            <div class="chart-frame"><canvas id="subChartPercentCanvas"></canvas></div>
+        </div>
+        
+        <div class="premium-card">
+            <div style="font-size:11px; font-weight:bold; color:var(--accent-purple);"><i class="fa-solid fa-bolt"></i> مانیتورینگ روند رشد کیفیت ذهنی و تمرکز لیزری</div>
+            <div class="chart-frame"><canvas id="subChartQualityCanvas"></canvas></div>
+        </div>
+
+        <div class="premium-card">
+            <div style="font-size:12px; font-weight:bold; margin-bottom:8px;"><i class="fa-solid fa-calendar-plus"></i> تنظیم اهداف اختصاصی این درس</div>
+            <div class="form-grp"><label>هدف ساعت مطالعه هفتگی</label><input type="number" id="setGoalHours" value="0"></div>
+            <div class="form-grp"><label>هدف تعداد تست هفتگی</label><input type="number" id="setGoalTests" value="0"></div>
+            <div class="form-grp"><label>هدف سوال نهایی هفتگی</label><input type="number" id="setGoalFinals" value="0"></div>
+            <button class="btn-block" onclick="AppAnalytics.saveSubjectGoals()">ذخیره و آپدیت اهداف استراتژیک</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    function getPersianToday() {
-        return new Intl.DateTimeFormat('fa-IR-u-nu-latn', {dateStyle: 'short'}).format(new Date());
-    }
+    const LESSONS = {
+        'زیست‌شناسی': { icon: '🧬', color: '#10b981' },
+        'شیمی': { icon: '⚗️', color: '#06b6d4' },
+        'فیزیک': { icon: '⚛️', color: '#38bdf8' },
+        'ریاضیات': { icon: '📐', color: '#fbbf24' },
+        'فارسی': { icon: '📚', color: '#ef4444' },
+        'عربی': { icon: '✒️', color: '#a855f7' },
+        'دینی': { icon: '🕌', color: '#f43f5e' },
+        'زبان': { icon: '🌍', color: '#6366f1' },
+        'سایر': { icon: '📝', color: '#94a3b8' }
+    };
 
-    const MAIN_SUBJECTS = ['زیست‌شناسی', 'شیمی', 'فیزیک', 'ریاضیات', 'فارسی', 'دینی', 'عربی', 'زبان', 'سایر'];
-    const qualityColors = {1: '#ef4444', 2: '#a855f7', 3: '#3b82f6', 4: '#10b981', 5: '#06b6d4'};
-    const qualityLabels = {1: 'قرمز', 2: 'بنفش', 3: 'آبی', 4: 'سبز', 5: 'فیروزه‌ای'};
+    let charts = {};
+    let currentSubject = '';
 
-    let localDatabase = JSON.parse(localStorage.getItem('KonkurProEngine_v8')) || [];
-    let notebookDatabase = JSON.parse(localStorage.getItem('KonkurProNotebook_v8')) || {};
-    let activeFormMode = 'study';
-    let selectedSubjectForAnalysis = '';
-
-    let chartInstances = {};
-
-    function openInputForm() {
-        document.getElementById('inputFormOverlay').classList.add('active');
-        document.getElementById('insDate').value = getPersianToday();
-    }
-    function closeOverlay(id) { document.getElementById(id).classList.remove('active'); }
-
-    function setFormMode(mode) {
-        activeFormMode = mode;
-        if(mode === 'test') {
-            document.getElementById('btnModeTest').classList.add('active'); document.getElementById('btnModeStudy').classList.remove('active');
-            document.getElementById('formTestBox').style.display = 'flex'; document.getElementById('formFinalBox').style.display = 'none';
-        } else {
-            document.getElementById('btnModeStudy').classList.add('active'); document.getElementById('btnModeTest').classList.remove('active');
-            document.getElementById('formTestBox').style.display = 'none'; document.getElementById('formFinalBox').style.display = 'block';
+    const AppStorage = {
+        getDB: function() {
+            return JSON.parse(localStorage.getItem('KonkurStrategicDB_v11')) || [];
+        },
+        saveDB: function(db) {
+            localStorage.setItem('KonkurStrategicDB_v11', JSON.stringify(db));
+        },
+        getGoals: function() {
+            return JSON.parse(localStorage.getItem('KonkurStrategicGoals_v11')) || {};
+        },
+        saveGoals: function(goals) {
+            localStorage.setItem('KonkurStrategicGoals_v11', JSON.stringify(goals));
+        },
+        exportBackupData: function() {
+            let dataStr = JSON.stringify({ db: this.getDB(), goals: this.getGoals() });
+            let dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            let exportFileDefaultName = 'Konkur_Strategic_Backup_' + AppAnalytics.getTodayShamsi().replace(/\//g,'-') + '.json';
+            let linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        },
+        importBackupData: function(input) {
+            let file = input.files[0];
+            if (!file) return;
+            let reader = new FileReader();
+            let self = this;
+            reader.onload = function(e) {
+                try {
+                    let parsed = JSON.parse(e.target.result);
+                    if (parsed.db && Array.isArray(parsed.db)) {
+                        self.saveDB(parsed.db);
+                        self.saveGoals(parsed.goals || {});
+                        AppAnalytics.recalculateAndRefresh();
+                        alert('بازیابی دیتابیس استراتژیک با موفقیت انجام و ذخیره شد!');
+                    } else { alert('فرمت فایل معتبر نیست.'); }
+                } catch (err) { alert('خطا در خواندن فایل بکاپ.'); }
+            };
+            reader.readAsText(file);
         }
-    }
+    };
 
-    function initSystem() {
+    const AppAnalytics = {
+        jalaliToGregorian: function(jy, jm, jd) {
+            jy = parseInt(jy); jm = parseInt(jm); jd = parseInt(jd);
+            let gy = (jy <= 979) ? 621 : 1600; jy -= (jy <= 979) ? 0 : 979;
+            let days = (365 * jy) + (Math.floor(jy / 33) * 8) + Math.floor(((jy % 33) + 3) / 4) + 78 + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 1) * 30) + 6);
+            gy += 4 * Math.floor(days / 1461); days %= 1461; gy += Math.floor((days - 1) / 365);
+            if (days > 365) days = (days - 1) % 365;
+            let gd = days + 1;
+            let sal_a = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            let gm; for (gm = 0; gm < 13 && gd > sal_a[gm]; gm++) gd -= sal_a[gm];
+            return `${gy}-${String(gm).padStart(2,'0')}-${String(gd).padStart(2,'0')}`;
+        },
+        gregorianToJalali: function(gy, gm, gd) {
+            gy = parseInt(gy); gm = parseInt(gm); gd = parseInt(gd);
+            let g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+            let jy = gy - 1600; let jm = gm - 1; let jd = gd - 1;
+            let g_day_no = 365 * jy + Math.floor((jy + 3) / 4) - Math.floor((jy + 99) / 100) + Math.floor((jy + 399) / 400);
+            for (let i = 0; i < jm; ++i) g_day_no += g_d_m[i + 1] - g_d_m[i];
+            if (jm > 1 && ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0))) ++g_day_no; g_day_no += jd;
+            let j_day_no = g_day_no - 79; let j_np = Math.floor(j_day_no / 12053); j_day_no %= 12053;
+            jy = 979 + 33 * j_np + 4 * Math.floor(j_day_no / 1461); j_day_no %= 1461;
+            if (j_day_no >= 366) { jy += Math.floor((j_day_no - 1) / 365); j_day_no = (j_day_no - 1) % 365; }
+            for (let i = 0; i < 11 && j_day_no >= ((i < 6) ? 31 : 30); ++i) j_day_no -= (i < 6) ? 31 : 30;
+            return `${jy}/${String(jm + 1).padStart(2,'0')}/${String(j_day_no + 1).padStart(2,'0')}`;
+        },
+        getLocalTodayGString: function() {
+            const offset = new Date().getTimezoneOffset();
+            let localDate = new Date(Date.now() - (offset * 60000));
+            return localDate.toISOString().split('T')[0];
+        },
+        getLocalYesterdayGString: function() {
+            const offset = new Date().getTimezoneOffset();
+            let localDate = new Date(Date.now() - (offset * 60000) - 86400000);
+            return localDate.toISOString().split('T')[0];
+        },
+        getTodayShamsi: function() {
+            const d = new Date();
+            return this.gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
+        },
+        recalculateAndRefresh: function() {
+            let db = AppStorage.getDB();
+            db.forEach(r => {
+                if(!r.gDate) {
+                    let parts = r.date.split('/');
+                    r.gDate = this.jalaliToGregorian(parts[0], parts[1], parts[2]);
+                }
+            });
+            db.sort((a,b) => a.gDate.localeCompare(b.gDate));
+            AppStorage.saveDB(db);
+
+            this.calculateStreak(db);
+            AppUI.renderLogTable(db);
+            AppUI.renderHeatmap(db);
+            this.renderAnalytics(db);
+        },
+        calculateStreak: function(db) {
+            if(db.length === 0) {
+                document.getElementById('cardStreak').innerText = '0 روز';
+                document.getElementById('cardBestStreak').innerText = '0 روز';
+                return;
+            }
+            let uniqueDates = [...new Set(db.map(r => r.gDate))].sort();
+            let maxStreak = 0; let tempStreak = 0;
+            
+            let todayG = this.getLocalTodayGString();
+            let yesterdayG = this.getLocalYesterdayGString();
+            
+            for(let i=0; i<uniqueDates.length; i++) {
+                if(i === 0) { tempStreak = 1; }
+                else {
+                    let d1 = new Date(uniqueDates[i-1]);
+                    let d2 = new Date(uniqueDates[i]);
+                    let diff = (d2 - d1) / (1000 * 60 * 60 * 24);
+                    if(diff === 1) { tempStreak++; } 
+                    else if(diff > 1) { if(tempStreak > maxStreak) maxStreak = tempStreak; tempStreak = 1; }
+                }
+            }
+            if(tempStreak > maxStreak) maxStreak = tempStreak;
+            
+            let currentStreak = 0;
+            if(uniqueDates.includes(todayG) || uniqueDates.includes(yesterdayG)) {
+                let lastDateStr = uniqueDates[uniqueDates.length - 1];
+                let checkDiff = (new Date(todayG) - new Date(lastDateStr)) / (1000 * 60 * 60 * 24);
+                currentStreak = (checkDiff <= 1) ? tempStreak : 0;
+            }
+
+            document.getElementById('cardStreak').innerText = `${currentStreak} روز`;
+            document.getElementById('cardBestStreak').innerText = `${maxStreak} روز`;
+        },
+        renderAnalytics: function(db) {
+            let totalMin = db.reduce((s,r) => s+r.duration,0);
+            let totalTests = db.reduce((s,r) => s+r.tests,0);
+            let testRecords = db.filter(r => r.tests > 0);
+            let avgPercent = testRecords.length ? (testRecords.reduce((s,r) => s+r.percent,0) / testRecords.length).toFixed(0) : 0;
+            let avgQual = db.length ? (db.reduce((s,r) => s+r.quality,0) / db.length).toFixed(1) : 0;
+
+            document.getElementById('anTotalHours').innerText = (totalMin/60).toFixed(1);
+            document.getElementById('anTotalTests').innerText = totalTests;
+            document.getElementById('anAvgPercent').innerText = avgPercent + '٪';
+            document.getElementById('anAvgQuality').innerText = avgQual;
+
+            let rankArr = Object.keys(LESSONS).map(name => {
+                let filter = db.filter(r => r.subject === name);
+                let time = filter.reduce((s,r) => s+r.duration, 0);
+                let test = filter.reduce((s,r) => s+r.tests, 0);
+                let score = time + (test * 2); 
+                return { name, score, time, test };
+            });
+            rankArr.sort((a,b) => b.score - a.score);
+
+            const rankBox = document.getElementById('rankingContainer'); rankBox.innerHTML = '';
+            let medals = ['🥇', '🥈', '🥉'];
+            for(let i=0; i<Math.min(3, rankArr.length); i++) {
+                if(rankArr[i].score > 0) {
+                    rankBox.innerHTML += `
+                        <div class="ranking-item">
+                            <span><span class="medal">${medals[i]}</span> <b>${rankArr[i].name}</b></span>
+                            <span style="font-size:11px; color:var(--text-gray);">${(rankArr[i].time/60).toFixed(1)}h مطالعه | ${rankArr[i].test} تست</span>
+                        </div>`;
+                }
+            }
+            if(!rankBox.innerHTML) rankBox.innerHTML = '<div style="font-size:12px; text-align:center; color:var(--text-gray);">داده‌ای جهت رتبه‌بندی موجود نیست.</div>';
+        },
+        saveSubjectGoals: function() {
+            let goals = AppStorage.getGoals();
+            goals[currentSubject] = {
+                hours: parseInt(document.getElementById('setGoalHours').value) || 0,
+                tests: parseInt(document.getElementById('setGoalTests').value) || 0,
+                finals: parseInt(document.getElementById('setGoalFinals').value) || 0
+            };
+            AppStorage.saveGoals(goals);
+            alert('اهداف راهبردی این درس ذخیره و اعمال شدند.');
+            AppUI.closeOverlay('subjectOverlay');
+            this.recalculateAndRefresh();
+        }
+    };
+
+    const AppUI = {
+        getThemeAccentColor: function() {
+            return getComputedStyle(document.documentElement).getPropertyValue('--accent-cyan').trim() || '#38bdf8';
+        },
+        toggleTheme: function() { 
+            document.body.classList.toggle('light-mode'); 
+            if(document.getElementById('analysisTab').classList.contains('active')) {
+                this.renderRadarChart();
+            }
+        },
+        switchTab: function(id) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-tabs button').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(id === 'mainTab') document.getElementById('tabBtn1').classList.add('active');
+            if(id === 'analysisTab') { document.getElementById('tabBtn2').classList.add('active'); this.renderRadarChart(); }
+            if(id === 'planningTab') { document.getElementById('tabBtn3').classList.add('active'); this.renderGoalsSection(); }
+        },
+        openFormOverlay: function() {
+            document.getElementById('recordForm').reset();
+            document.getElementById('editRecordId').value = '';
+            document.getElementById('formOverlayTitle').innerText = 'ثبت گزارش کارکرد جدید';
+            document.getElementById('formDate').value = AppAnalytics.getTodayShamsi();
+            document.getElementById('formOverlay').classList.add('active');
+        },
+        closeOverlay: function(id) { document.getElementById(id).classList.remove('active'); },
+        
+        renderLogTable: function(db) {
+            const tbody = document.getElementById('logTableBody'); tbody.innerHTML = '';
+            let reversed = [...db].reverse().slice(0, 10);
+            reversed.forEach(r => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${r.date}</td>
+                        <td>${LESSONS[r.subject]?.icon || ''} ${r.subject}</td>
+                        <td>${(r.duration/60).toFixed(1)}h</td>
+                        <td>${r.tests > 0 ? r.tests + ' تست' : r.finals + ' سوال'}</td>
+                        <td>${r.topic}</td>
+                        <td class="action-btns">
+                            <i class="fa-solid fa-pen" onclick="AppUI.editRecord('${r.id}')"></i>
+                            <i class="fa-solid fa-trash" onclick="AppUI.deleteRecord('${r.id}')"></i>
+                        </td>
+                    </tr>`;
+            });
+        },
+        editRecord: function(id) {
+            let db = AppStorage.getDB();
+            let r = db.find(item => item.id === id);
+            if(!r) return;
+            document.getElementById('recordForm').reset();
+            document.getElementById('editRecordId').value = r.id;
+            document.getElementById('formOverlayTitle').innerText = 'ویرایش کارکرد استراتژیک';
+            document.getElementById('formDate').value = r.date;
+            document.getElementById('formSubject').value = r.subject;
+            document.getElementById('formDuration').value = r.duration;
+            document.getElementById('formTests').value = r.tests || 0;
+            document.getElementById('formPercent').value = r.percent || 0;
+            document.getElementById('formFinals').value = r.finals || 0;
+            document.getElementById('formTopic').value = r.topic || '';
+            document.getElementById('formQuality').value = r.quality || 3;
+            document.getElementById('formOverlay').classList.add('active');
+        },
+        deleteRecord: function(id) {
+            if(confirm('آیا از حذف استراتژیک این رکورد مطمئن هستید؟')) {
+                let db = AppStorage.getDB().filter(r => r.id !== id);
+                AppStorage.saveDB(db);
+                AppAnalytics.recalculateAndRefresh();
+            }
+        },
+        renderHeatmap: function(db) {
+            const grid = document.getElementById('githubHeatmap'); grid.innerHTML = '';
+            let today = new Date();
+            for(let i=27; i>=0; i--) {
+                let d = new Date(today.getTime() - (i * 86400000));
+                let gStr = d.toISOString().split('T')[0];
+                let matchedLogs = db.filter(r => r.gDate === gStr);
+                let hours = matchedLogs.reduce((s,r) => s + (r.duration/60), 0);
+                
+                let alpha = 0;
+                if(hours > 0 && hours <= 3) alpha = 0.2;
+                else if(hours > 3 && hours <= 6) alpha = 0.5;
+                else if(hours > 6 && hours <= 9) alpha = 0.75;
+                else if(hours > 9) alpha = 1;
+
+                let cell = document.createElement('div');
+                cell.className = 'heat-cell';
+                cell.style.background = alpha > 0 ? `rgba(52, 211, 153, ${alpha})` : 'var(--border-line)';
+                cell.setAttribute('data-tip', `${AppAnalytics.gregorianToJalali(d.getFullYear(), d.getMonth()+1, d.getDate())} : ${hours.toFixed(1)} ساعت`);
+                grid.appendChild(cell);
+            }
+        },
+        renderRadarChart: function() {
+            let db = AppStorage.getDB();
+            let labels = Object.keys(LESSONS);
+            let hoursData = labels.map(name => db.filter(r => r.subject === name).reduce((s,r) => s+(r.duration/60), 0));
+            let testsData = labels.map(name => db.filter(r => r.subject === name).reduce((s,r) => s+r.tests, 0));
+
+            let maxHours = Math.max(...hoursData, 1);
+            let maxTests = Math.max(...testsData, 1);
+
+            let normalizedHours = hoursData.map(v => ((v / maxHours) * 100).toFixed(0));
+            let normalizedTests = testsData.map(v => ((v / maxTests) * 100).toFixed(0));
+
+            let accentColor = this.getThemeAccentColor();
+
+            if(charts['radar']) charts['radar'].destroy();
+            charts['radar'] = new Chart(document.getElementById('radarChartCanvas').getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'سهم مطالعه (٪)', data: normalizedHours, borderColor: accentColor, backgroundColor: 'rgba(56,189,248,0.15)' },
+                        { label: 'سهم تست (٪)', data: normalizedTests, borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.15)' }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { labels: { color: 'var(--text-gray)', font: { size: 10 } } } }, 
+                    scales: { r: { min: 0, max: 100, grid: { color: 'rgba(148,163,184,0.1)' }, angleLines: { color: 'rgba(148,163,184,0.1)' }, pointLabels: { color: 'var(--text-gray)' } } } 
+                }
+            });
+        },
+        renderGoalsSection: function() {
+            let db = AppStorage.getDB();
+            let goals = AppStorage.getGoals();
+            const box = document.getElementById('goalsContainer'); box.innerHTML = '';
+
+            let todayG = new Date(AppAnalytics.getLocalTodayGString());
+            let sevenDaysAgoG = new Date(todayG.getTime() - (7 * 86400000));
+            
+            let weeklyLogs = db.filter(r => {
+                let rDate = new Date(r.gDate);
+                return rDate >= sevenDaysAgoG && rDate <= todayG;
+            });
+
+            Object.keys(LESSONS).forEach(name => {
+                let g = goals[name] || { hours: 0, tests: 0, finals: 0 };
+                let currentWeekly = weeklyLogs.filter(r => r.subject === name);
+                let curH = currentWeekly.reduce((s,r) => s+(r.duration/60), 0);
+                let curT = currentWeekly.reduce((s,r) => s+r.tests, 0);
+                
+                let pctH = g.hours > 0 ? Math.min(100, (curH / g.hours) * 100).toFixed(0) : 0;
+                let pctT = g.tests > 0 ? Math.min(100, (curT / g.tests) * 100).toFixed(0) : 0;
+
+                box.innerHTML += `
+                    <div style="margin-bottom:12px; border-bottom:1px dashed var(--border-line); padding-bottom:8px;">
+                        <div style="font-weight:bold; font-size:12px; color:${LESSONS[name].color};">${LESSONS[name].icon} ${name}</div>
+                        <div class="goal-row"><span>ساعت مطالعه هفتگی: ${curH.toFixed(1)} از ${g.hours}h</span> <span>${pctH}٪</span></div>
+                        <div class="progress-container"><div class="progress-bar" style="width:${pctH}%; background:${LESSONS[name].color};"></div></div>
+                        <div class="goal-row" style="margin-top:4px;"><span>تست هفتگی: ${curT} از ${g.tests}</span> <span>${pctT}٪</span></div>
+                        <div class="progress-container"><div class="progress-bar" style="width:${pctT}%; background:var(--accent-amber);"></div></div>
+                    </div>`;
+            });
+        },
+        openSubjectOverlay: function(subject) {
+            currentSubject = subject;
+            document.getElementById('subjectOverlayTitle').innerText = `تحلیل ماتریسی و عمیق: ${subject}`;
+            document.getElementById('subjectOverlay').classList.add('active');
+            
+            let db = AppStorage.getDB();
+            let matches = db.filter(r => r.subject === subject);
+            const grid = document.getElementById('subStatsGrid');
+            
+            let tMin = matches.reduce((s,r) => s+r.duration, 0);
+            let tTests = matches.reduce((s,r) => s+r.tests, 0);
+            let testRecs = matches.filter(r => r.tests > 0);
+            let avgPct = testRecs.length ? (testRecs.reduce((s,r) => s+r.percent,0)/testRecs.length).toFixed(0) : 0;
+            let maxSession = matches.length ? Math.max(...matches.map(r => r.duration)) : 0;
+
+            grid.innerHTML = `
+                <div class="stat-box"><div><div style="font-size:9px;color:var(--text-gray);">کل زمان مطالعه</div><b>${(tMin/60).toFixed(1)} ساعت</b></div></div>
+                <div class="stat-box"><div><div style="font-size:9px;color:var(--text-gray);">مجموع تست</div><b>${tTests}</b></div></div>
+                <div class="stat-box"><div><div style="font-size:9px;color:var(--text-gray);">میانگین درصد</div><b>${avgPct}٪</b></div></div>
+                <div class="stat-box"><div><div style="font-size:9px;color:var(--text-gray);">ماکسیمم یک جلسه</div><b>${maxSession} دقیقه</b></div></div>`;
+
+            let goals = AppStorage.getGoals();
+            let g = goals[subject] || { hours: 0, tests: 0, finals: 0 };
+            document.getElementById('setGoalHours').value = g.hours;
+            document.getElementById('setGoalTests').value = g.tests;
+            document.getElementById('setGoalFinals').value = g.finals;
+
+            let labels = matches.map(r => r.date);
+            let percents = matches.map(r => r.percent);
+            let movingAvgPercent = percents.map((p, idx, arr) => {
+                let sub = arr.slice(Math.max(0, idx - 2), idx + 1);
+                return (sub.reduce((s,v)=>s+v,0) / sub.length).toFixed(0);
+            });
+
+            if(charts['subPercent']) charts['subPercent'].destroy();
+            charts['subPercent'] = new Chart(document.getElementById('subChartPercentCanvas').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'درصد کسب‌شده', data: percents, borderColor: 'rgba(251,191,36,0.4)', tension: 0.1 },
+                        { label: 'میانگین متحرک ۳ جلسه', data: movingAvgPercent, borderColor: '#fbbf24', borderWidth: 3, tension: 0.2, fill: false }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            if(charts['subQuality']) charts['subQuality'].destroy();
+            charts['subQuality'] = new Chart(document.getElementById('subChartQualityCanvas').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{ label: 'روند تمرکز ذهنی', data: matches.map(r => r.quality), borderColor: '#c084fc', borderWidth: 3, tension: 0.2 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+    };
+
+    window.onload = function() {
         const scroller = document.getElementById('subjectScroller');
-        const selectElement = document.getElementById('insSubject');
-        MAIN_SUBJECTS.forEach(sub => {
-            selectElement.innerHTML += `<option value="${sub}">${sub}</option>`;
-            scroller.innerHTML += `<div class="sub-chip" onclick="openSubjectPanel('${sub}')"><i class="fa-solid fa-graduation-cap"></i><span>${sub}</span></div>`;
+        const sel = document.getElementById('formSubject');
+        scroller.innerHTML = ''; sel.innerHTML = '';
+        
+        Object.keys(LESSONS).forEach(name => {
+            sel.innerHTML += `<option value="${name}">${LESSONS[name].icon} ${name}</option>`;
+            scroller.innerHTML += `
+                <div class="subject-badge" onclick="AppUI.openSubjectOverlay('${name}')" style="border-top: 3px solid ${LESSONS[name].color}">
+                    <i style="color:${LESSONS[name].color}">${LESSONS[name].icon}</i>
+                    <span>${name}</span>
+                </div>`;
         });
-        refreshDashboardData();
-    }
+        
+        AppAnalytics.recalculateAndRefresh();
+        initPWA();
+    };
 
-    document.getElementById('dataForm').addEventListener('submit', function(e){
+    document.getElementById('recordForm').addEventListener('submit', function(e){
         e.preventDefault();
-        const qualVal = parseInt(document.querySelector('input[name="insQual"]:checked').value);
-        const log = {
-            id: 'L-' + Date.now(), date: document.getElementById('insDate').value,
-            subject: document.getElementById('insSubject').value, duration: parseInt(document.getElementById('insDuration').value),
-            mode: activeFormMode, topic: document.getElementById('insTopic').value, quality: qualVal,
-            tests: activeFormMode === 'test' ? parseInt(document.getElementById('insTests').value) : 0,
-            percent: activeFormMode === 'test' ? parseInt(document.getElementById('insPercent').value) : null,
-            finals: activeFormMode === 'study' ? parseInt(document.getElementById('insFinals').value) : 0
+        let db = AppStorage.getDB();
+        let editId = document.getElementById('editRecordId').value;
+        let pDate = document.getElementById('formDate').value;
+        let parts = pDate.split('/');
+        let gDateGenerated = AppAnalytics.jalaliToGregorian(parts[0], parts[1], parts[2]);
+
+        let recordObj = {
+            id: editId || 'R-' + Date.now(),
+            date: pDate,
+            gDate: gDateGenerated,
+            subject: document.getElementById('formSubject').value,
+            duration: parseInt(document.getElementById('formDuration').value),
+            tests: parseInt(document.getElementById('formTests').value) || 0,
+            percent: parseInt(document.getElementById('formPercent').value) || 0,
+            finals: parseInt(document.getElementById('formFinals').value) || 0,
+            topic: document.getElementById('formTopic').value,
+            quality: parseInt(document.getElementById('formQuality').value)
         };
-        localDatabase.push(log);
-        localStorage.setItem('KonkurProEngine_v8', JSON.stringify(localDatabase));
-        closeOverlay('inputFormOverlay');
-        document.getElementById('insDuration').value = ''; document.getElementById('insTopic').value = '';
-        refreshDashboardData();
+
+        if(editId) { db = db.map(item => item.id === editId ? recordObj : item); }
+        else { db.push(recordObj); }
+
+        AppStorage.saveDB(db);
+        AppUI.closeOverlay('formOverlay');
+        AppAnalytics.recalculateAndRefresh();
     });
 
-    function refreshDashboardData() {
-        const uniqueDates = [...new Set(localDatabase.map(r => r.date))];
-        document.getElementById('topStreak').innerText = `${uniqueDates.length} روز`;
-        
-        let totalMinutes = localDatabase.reduce((s, r) => s + r.duration, 0);
-        document.getElementById('topHours').innerText = `${(totalMinutes/60).toFixed(1)} ساعت`;
-        document.getElementById('topTests').innerText = localDatabase.reduce((s, r) => s + r.tests, 0);
-        document.getElementById('topFinals').innerText = localDatabase.reduce((s, r) => s + r.finals, 0);
-
-        const tbody = document.getElementById('historyTableBody'); tbody.innerHTML = '';
-        [...localDatabase].reverse().slice(0, 8).forEach(r => {
-            let detail = r.mode === 'test' ? `${r.tests} تست (${r.percent}٪)` : `${r.finals} نهایی`;
-            tbody.innerHTML += `<tr><td>${r.date}</td><td>${r.subject}</td><td>${r.mode === 'test' ? 'تستی' : 'تشریحی'}</td><td>${r.duration}m</td><td>${r.topic}</td><td>${detail}</td></tr>`;
-        });
-
-        renderMainDashboardCharts();
-    }
-
-    function renderMainDashboardCharts() {
-        const dailyTotals = {}; localDatabase.forEach(r => { dailyTotals[r.date] = (dailyTotals[r.date] || 0) + (r.duration / 60); });
-        const datesSorted = Object.keys(dailyTotals).sort();
-        
-        if(chartInstances['mainDaily']) chartInstances['mainDaily'].destroy();
-        chartInstances['mainDaily'] = new Chart(document.getElementById('mainDailyChart').getContext('2d'), {
-            type: 'line', data: { labels: datesSorted, datasets: [{ label: 'ساعت', data: datesSorted.map(d => dailyTotals[d]), borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.1)', fill: true, tension: 0.2, borderWidth: 3 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#1e2943' } }, x: { grid: { color: '#1e2943' } } } }
-        });
-
-        // شبیه‌ساز روند هفتگی (برش ۷تایی داده‌ها)
-        let weekLabels = []; let weekData = [];
-        for (let i = 0; i < datesSorted.length; i += 7) {
-            let slice = datesSorted.slice(i, i + 7);
-            let sum = slice.reduce((s, d) => s + dailyTotals[d], 0);
-            weekLabels.push(`هفته ${Math.floor(i/7) + 1}`); weekData.push(sum);
+    function initPWA() {
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE_NAME = 'konkur-strategic-v11';
+                const assets = ['./', './index.html', './manifest.json'];
+                self.addEventListener('install', e => e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(assets))));
+                self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+            `;
+            const blob = new Blob([swCode], { type: 'application/javascript' });
+            const workerUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(workerUrl).catch(err => console.log('SW Registration Error', err));
         }
-        if(chartInstances['mainWeekly']) chartInstances['mainWeekly'].destroy();
-        chartInstances['mainWeekly'] = new Chart(document.getElementById('mainWeeklyChart').getContext('2d'), {
-            type: 'line', data: { labels: weekLabels, datasets: [{ data: weekData, borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, tension: 0.2, borderWidth: 3 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#1e2943' } }, x: { grid: { color: '#1e2943' } } } }
-        });
     }
-
-    function openGlobalAnalysis() {
-        document.getElementById('globalAnalysisOverlay').classList.add('active');
-        let datasetTest = []; let datasetFinal = [];
-        MAIN_SUBJECTS.forEach(sub => {
-            let filter = localDatabase.filter(r => r.subject === sub);
-            datasetTest.push(filter.reduce((s, r) => s + r.tests, 0));
-            datasetFinal.push(filter.reduce((s, r) => s + r.finals, 0));
-        });
-
-        if(chartInstances['gTest']) chartInstances['gTest'].destroy();
-        chartInstances['gTest'] = new Chart(document.getElementById('chartGlobalTest').getContext('2d'), {
-            type: 'line', data: { labels: MAIN_SUBJECTS, datasets: [{ label: 'تعداد تست کل', data: datasetTest, borderColor: '#fbbf24', tension: 0.2, borderWidth: 3, fill: false }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#1e2943' } } } }
-        });
-
-        if(chartInstances['gFinal']) chartInstances['gFinal'].destroy();
-        chartInstances['gFinal'] = new Chart(document.getElementById('chartGlobalFinal').getContext('2d'), {
-            type: 'line', data: { labels: MAIN_SUBJECTS, datasets: [{ label: 'تعداد سوال امتحانی نهایی', data: datasetFinal, borderColor: '#c084fc', tension: 0.2, borderWidth: 3, fill: false }] },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#1e2943' } } } }
-        });
-    }
-
-    function openSubjectPanel(subject) {
-        selectedSubjectForAnalysis = subject;
-        document.getElementById('subjectOverlayTitle').innerHTML = `<i class="fa-solid fa-graduation-cap" style="color:var(--accent-cyan)"></i> ارزیابی پیشرفته درس: ${subject}`;
-        document.getElementById('subjectOverlay').classList.add('active');
-        renderSubjectSpecificCharts(subject);
-        loadSubjectNotes(subject);
-    }
-
-    function renderSubjectSpecificCharts(subject) {
-        let matches = localDatabase.filter(r => r.subject === subject).sort((a,b) => a.date.localeCompare(b.date));
-        let labels = matches.map(r => r.date);
-
-        if(chartInstances['subTest']) chartInstances['subTest'].destroy();
-        chartInstances['subTest'] = new Chart(document.getElementById('subChartTest').getContext('2d'), {
-            type: 'line', data: { labels: labels, datasets: [{ label: 'تعداد تست', data: matches.map(r => r.tests), borderColor: '#fbbf24', tension: 0.1, fill: false }] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        if(chartInstances['subFinal']) chartInstances['subFinal'].destroy();
-        chartInstances['subFinal'] = new Chart(document.getElementById('subChartFinal').getContext('2d'), {
-            type: 'line', data: { labels: labels, datasets: [{ label: 'سوال نهایی', data: matches.map(r => r.finals), borderColor: '#c084fc', tension: 0.1, fill: false }] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        if(chartInstances['subQual']) chartInstances['subQual'].destroy();
-        chartInstances['subQual'] = new Chart(document.getElementById('subChartQuality').getContext('2d'), {
-            type: 'line', data: { labels: labels, datasets: [{ label: 'سطح تمرکز (1تا5)', data: matches.map(r => r.quality), borderColor: '#ef4444', tension: 0.1, fill: false }] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-
-        if(chartInstances['subTime']) chartInstances['subTime'].destroy();
-        chartInstances['subTime'] = new Chart(document.getElementById('subChartTime').getContext('2d'), {
-            type: 'line', data: { labels: labels, datasets: [{ label: 'مدت (دقیقه)', data: matches.map(r => r.duration), borderColor: '#38bdf8', tension: 0.1, fill: false }] },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
-
-    function loadSubjectNotes(subject) {
-        const logBox = document.getElementById('subjectJournalLog'); logBox.innerHTML = '';
-        let list = notebookDatabase[subject] || [];
-        [...list].reverse().forEach(n => {
-            logBox.innerHTML += `<div class="journal-item"><div class="journal-date">${n.date}</div><div>${n.text}</div></div>`;
-        });
-    }
-
-    function saveSubjectNote() {
-        const textStr = document.getElementById('subjectNoteInput').value.trim();
-        if(!textStr) return;
-        if(!notebookDatabase[selectedSubjectForAnalysis]) notebookDatabase[selectedSubjectForAnalysis] = [];
-        notebookDatabase[selectedSubjectForAnalysis].push({ date: getPersianToday(), text: textStr });
-        localStorage.setItem('KonkurProNotebook_v8', JSON.stringify(notebookDatabase));
-        document.getElementById('subjectNoteInput').value = '';
-        loadSubjectNotes(selectedSubjectForAnalysis);
-    }
-
-    window.onload = initSystem;
 </script>
 </body>
 </html>
