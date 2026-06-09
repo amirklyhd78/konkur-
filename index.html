@@ -3,308 +3,378 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سامانه استراتژیک ارزیابی کنکور</title>
+    <title>داشبورد استراتژیک کنکور پرو</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f172a">
+    <meta name="theme-color" content="#0b0f19">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --base-bg: #f8fafc;
-            --surface-bg: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --brand-cyan: #0284c7;
-            --brand-gold: #cca43b;
-            --border-glow: #e2e8f0;
-            --q-critical: #ef4444; --q-low: #a855f7; --q-medium: #3b82f6; --q-high: #10b981; --q-optimal: #06b6d4;
+            --bg-main: #0b0f19;
+            --bg-card: #131a2c;
+            --border-line: #1e2943;
+            --text-white: #f8fafc;
+            --text-gray: #94a3b8;
+            --accent-cyan: #38bdf8;
+            --accent-emerald: #34d399;
+            --accent-amber: #fbbf24;
+            --accent-purple: #c084fc;
         }
-
-        * { box-sizing: border-box; transition: all 0.2s ease; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-            background-color: var(--base-bg); margin: 0; padding: 12px;
-            color: var(--text-main); font-size: 15px;
-        }
-
-        .app-container { max-width: 100%; display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; }
-
-        /* هدر مینی‌مال عمودی */
-        .app-header {
-            background: linear-gradient(135deg, #0f172a, #1e293b); color: white;
-            padding: 15px; border-radius: 12px; display: flex;
-            flex-direction: column; gap: 10px; align-items: center; text-align: center;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        .header-title h1 { margin: 0; font-size: 18px; font-weight: 800; }
-        .header-title p { margin: 3px 0 0 0; font-size: 11px; color: #94a3b8; }
-        .streak-badge { background: rgba(217,119,6,0.2); border: 1px solid #d97706; padding: 6px 16px; border-radius: 50px; font-weight: bold; color: #f59e0b; font-size: 13px; width: 100%; max-width: 220px; }
-
-        /* بخش آمار کل - ۲ در ۲ برای صفحات عمودی */
-        .metrics-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .metric-card {
-            background: var(--surface-bg); border-radius: 12px; padding: 12px;
-            border: 1px solid var(--border-glow); display: flex; align-items: center; gap: 10px;
-        }
-        .metric-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; background: #e0f2fe; color: #0369a1; flex-shrink: 0; }
-        .metric-data h3 { margin: 0; font-size: 11px; color: var(--text-muted); }
-        .metric-data .num { font-size: 16px; font-weight: 800; margin-top: 2px; }
-
-        /* چیدمان تک ستونه عمودی اصلی مخصوص موبایل */
-        .main-workspace { display: flex; flex-direction: column; gap: 15px; }
-
-        .panel { background: var(--surface-bg); border-radius: 14px; padding: 15px; border: 1px solid var(--border-glow); }
-        .panel-title { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; color: var(--brand-cyan); border-bottom: 1px dashed var(--brand-gold); padding-bottom: 6px; }
-
-        /* لیست دروس با اسکرول افقی دکمه‌ای برای ذخیره فضا در حالت عمودی */
-        .subject-list { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
-        .subject-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; cursor: pointer; flex-shrink: 0; scroll-snap-align: start; min-width: 110px; text-align: center; }
-        .subject-card.active { border: 1.5px solid var(--brand-cyan); background: #f0f9ff; box-shadow: 0 2px 6px rgba(2,132,199,0.1); }
-        .subject-card-meta { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: bold; }
-        .subject-card-meta span:last-child { color: var(--brand-cyan); font-size: 13px; }
-
-        /* بخش نمودارها به صورت زیر هم */
-        .visual-deck { display: flex; flex-direction: column; gap: 15px; }
-        .chart-box { height: 200px; position: relative; width: 100%; }
-
-        /* جدول گزارشات پایین با اسکرول */
-        .table-wrapper { overflow-x: auto; max-height: 250px; margin-top: 5px; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: center; min-width: 500px; }
-        th { background: #f1f5f9; padding: 10px; position: sticky; top: 0; font-weight: bold; z-index: 2; }
-        td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
-
-        /* 👑 پنجره پاپ‌آپ شیک ثبت اطلاعات (Modal) 👑 */
-        .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(15,23,42,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; padding: 10px; }
-        .modal-overlay.active { opacity: 1; pointer-events: auto; }
-        .modal-content { background: var(--surface-bg); width: 100%; max-width: 450px; border-radius: 16px; padding: 20px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); position: relative; border-top: 4px solid var(--brand-cyan); max-height: 90vh; overflow-y: auto; }
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Arial, sans-serif; transition: all 0.25s ease; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-main); color: var(--text-white); margin: 0; padding: 16px; font-size: 14px; }
+        .app-wrapper { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; padding-bottom: 90px; }
         
-        /* دکمه شناور ایجاد فعالیت جدید */
-        .floating-add-btn { position: fixed; bottom: 20px; left: 20px; width: 56px; height: 56px; background: linear-gradient(135deg, #0369a1, var(--brand-cyan)); color: white; border: 2px solid var(--brand-gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; box-shadow: 0 8px 16px rgba(2,132,199,0.3); z-index: 999; }
-        .floating-add-btn:hover { transform: scale(1.05); }
-
-        /* استایل‌های داخل فرم */
-        .form-row { display: flex; flex-direction: column; gap: 0; }
-        .form-group { margin-bottom: 12px; display: flex; flex-direction: column; }
-        label { font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #475569; }
-        input, select { padding: 11px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: inherit; background-color: #f8fafc; }
+        header { text-align: center; padding: 12px 0; border-bottom: 1px solid var(--border-line); }
+        header h1 { margin: 0; font-size: 19px; font-weight: 800; background: linear-gradient(to left, var(--accent-cyan), var(--accent-emerald)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .segmented-control { display: flex; background: #e2e8f0; padding: 4px; border-radius: 8px; margin-bottom: 15px; }
-        .segmented-control button { flex: 1; border: none; padding: 9px; background: none; font-weight: bold; cursor: pointer; font-family: inherit; font-size: 13px;}
-        .segmented-control button.active { background: white; color: var(--brand-cyan); border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .counter-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .counter-card { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 10px; }
+        .counter-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: rgba(56,189,248,0.1); color: var(--accent-cyan); }
+        .counter-info h3 { margin: 0; font-size: 11px; color: var(--text-gray); }
+        .counter-info div { font-size: 15px; font-weight: 700; margin-top: 2px; }
 
-        .quality-matrix { display: flex; gap: 4px; }
-        .quality-box { flex: 1; text-align: center; }
-        .quality-box input { display: none; }
-        .quality-box label { display: block; padding: 10px 2px; border-radius: 6px; color: white; font-weight: bold; font-size: 11px; cursor: pointer; opacity: 0.35; }
-        .quality-box input:checked + label { opacity: 1; transform: scale(1.05); border: 1.5px solid var(--brand-gold); }
+        .deck-title { font-size: 13px; font-weight: 700; color: var(--accent-cyan); margin: 5px 0; display: flex; align-items: center; gap: 6px; }
+        .subject-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
+        .subject-row::-webkit-scrollbar { display: none; }
+        .sub-chip { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; min-width: 90px; flex-shrink: 0; }
+        .sub-chip i { font-size: 16px; color: var(--text-gray); }
+        .sub-chip span { font-size: 12px; font-weight: 600; }
+        .sub-chip.analysis-btn { border-color: var(--accent-amber); background: rgba(251,191,36,0.05); }
+        .sub-chip.analysis-btn i { color: var(--accent-amber); }
 
-        .close-modal { position: absolute; top: 15px; left: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+        .panel-box { background: var(--bg-card); border: 1px solid var(--border-line); border-radius: 16px; padding: 16px; }
+        .chart-container { height: 200px; position: relative; margin-top: 10px; }
+
+        .history-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; margin-top: 8px; }
+        .history-table th { background: #1e293b; padding: 8px; color: var(--text-gray); font-weight: 600; }
+        .history-table td { padding: 8px; border-bottom: 1px solid var(--border-line); color: #cbd5e1; }
+
+        .fullscreen-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-main); z-index: 1000; transform: translateY(100%); display: flex; flex-direction: column; padding: 16px; overflow-y: auto; }
+        .fullscreen-overlay.active { transform: translateY(0); }
+        .overlay-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-line); padding-bottom: 12px; margin-bottom: 16px; }
+        .overlay-header h2 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+        .close-overlay-btn { background: var(--bg-card); border: 1px solid var(--border-line); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
+
+        .note-area { width: 100%; background: #161f38; border: 1px solid var(--border-line); border-radius: 10px; color: white; padding: 12px; font-size: 13px; resize: none; margin-top: 5px; }
+        .btn-action { background: linear-gradient(135deg, #0284c7, #0369a1); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        .journal-log { background: #161f38; border-radius: 10px; padding: 10px; margin-top: 10px; max-height: 150px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .journal-item { border-bottom: 1px dashed var(--border-line); padding-bottom: 6px; font-size: 12px; }
+        .journal-item:last-child { border: none; }
+        .journal-date { color: var(--accent-cyan); font-weight: bold; margin-bottom: 2px; }
+
+        .floating-action-trigger { position: fixed; bottom: 24px; left: 24px; width: 56px; height: 56px; background: linear-gradient(135deg, var(--accent-cyan), #0284c7); color: white; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; box-shadow: 0 8px 20px rgba(56,189,248,0.3); z-index: 999; }
+        
+        .form-element { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+        .form-element label { font-size: 12px; color: var(--text-gray); font-weight: 600; }
+        .form-element input, .form-element select { background: var(--bg-card); border: 1px solid var(--border-line); padding: 10px; border-radius: 8px; color: white; font-size: 13px; }
+        .toggle-switch { display: flex; background: var(--bg-card); padding: 4px; border-radius: 8px; margin-bottom: 14px; border: 1px solid var(--border-line); }
+        .toggle-switch button { flex: 1; border: none; padding: 8px; background: none; font-weight: bold; color: var(--text-gray); cursor: pointer; }
+        .toggle-switch button.active { background: #1e2943; color: var(--accent-cyan); border-radius: 6px; }
+
+        .quality-row { display: flex; gap: 4px; }
+        .quality-row input { display: none; }
+        .quality-row label { flex: 1; text-align: center; padding: 8px 0; border-radius: 6px; font-size: 11px; font-weight: bold; cursor: pointer; opacity: 0.3; color: white; }
+        .quality-row input:checked + label { opacity: 1; border: 2px solid white; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <header class="app-header">
-        <div class="header-title">
-            <h1>داشبورد تحلیل استراتژیک مطالعه</h1>
-            <p>نسخه ویژه عمودی گوشی (بدون نیاز به زوم)</p>
-        </div>
-        <div class="streak-badge" id="streakBadge"><i class="fa-solid fa-fire"></i> استمرار مطالعه: <span id="streakCount">0</span> روز</div>
+<div class="app-wrapper">
+    <header>
+        <h1>داشبورد تحلیل استراتژیک مطالعه</h1>
     </header>
 
-    <section class="metrics-row">
-        <div class="metric-card"><div class="metric-icon"><i class="fa-solid fa-clock"></i></div><div class="metric-data"><h3>کل مطالعه</h3><div class="num" id="mTotalHours">0 ساعت</div></div></div>
-        <div class="metric-card"><div class="metric-icon" style="background:#fef3c7; color:#b45309;"><i class="fa-solid fa-bolt"></i></div><div class="metric-data"><h3>بانک تست</h3><div class="num" id="mTotalTests">0</div></div></div>
-        <div class="metric-card"><div class="metric-icon" style="background:#dcfce7; color:#15803d;"><i class="fa-solid fa-chart-pie"></i></div><div class="metric-data"><h3>میانگین درصد</h3><div class="num" id="mAvgPercent">0٪</div></div></div>
-        <div class="metric-card"><div class="metric-icon" style="background:#f3e8ff; color:#6b21a8;"><i class="fa-solid fa-graduation-cap"></i></div><div class="metric-data"><h3>مسائل نهایی</h3><div class="num" id="mTotalFinals">0</div></div></div>
-    </section>
+    <div class="counter-grid">
+        <div class="counter-card"><div class="counter-icon"><i class="fa-solid fa-hourglass-half"></i></div><div class="counter-info"><h3>کل ساعات مطالعه</h3><div id="topHours">0h</div></div></div>
+        <div class="counter-card"><div class="counter-icon" style="color:var(--accent-emerald); background:rgba(52,211,153,0.1);"><i class="fa-solid fa-crosshair"></i></div><div class="counter-info"><h3>کل تست‌های حل‌شده</h3><div id="topTests">0</div></div></div>
+        <div class="counter-card"><div class="counter-icon" style="color:var(--accent-amber); background:rgba(251,191,36,0.1);"><i class="fa-solid fa-graduation-cap"></i></div><div class="counter-info"><h3>کل تمرینات نهایی</h3><div id="topFinals">0</div></div></div>
+        <div class="counter-card"><div class="counter-icon" style="color:var(--accent-purple); background:rgba(192,132,252,0.1);"><i class="fa-solid fa-fire"></i></div><div class="counter-info"><h3>پیوستگی ممتد</h3><div id="topStreak">0 روز</div></div></div>
+    </div>
 
-    <main class="main-workspace">
-        <div class="panel">
-            <div class="panel-title" style="margin-bottom: 8px;"><i class="fa-solid fa-layer-group"></i>سهم کارکرد دروس (لمس و بکشید)</div>
-            <div class="subject-list" id="subjectRowsContainer"></div>
+    <div>
+        <div class="deck-title"><i class="fa-solid fa-cubes"></i>درس‌ها و آنالیز تخصصی عملکرد</div>
+        <div class="subject-row" id="subjectScroller">
+            <div class="sub-chip analysis-btn" onclick="openGlobalAnalysis()"><i class="fa-solid fa-chart-bar"></i><span>آنالیز کل</span></div>
         </div>
+    </div>
 
-        <div class="visual-deck">
-            <div class="panel">
-                <div class="panel-title"><i class="fa-solid fa-chart-line"></i>حجم کل مطالعه روزانه (ساعت)</div>
-                <div class="chart-box"><canvas id="canvasGlobal"></canvas></div>
-            </div>
-            
-            <div class="panel">
-                <div class="panel-title" id="lblSubjectChart"><i class="fa-solid fa-chart-column"></i>روند درس انتخابی</div>
-                <div class="chart-box"><canvas id="canvasSubject"></canvas></div>
-            </div>
+    <div class="panel-box">
+        <div class="deck-title"><i class="fa-solid fa-chart-line"></i>حجم کل مطالعه روزانه (ساعت)</div>
+        <div class="chart-container"><canvas id="mainDailyChart"></canvas></div>
+    </div>
 
-            <div class="panel">
-                <div class="panel-title"><i class="fa-solid fa-database"></i>تاریخچه دقیق فعالیت‌های اخیر (اسکرول افقی)</div>
-                <div class="table-wrapper">
-                    <table>
-                        <thead>
-                            <tr><th>تاریخ</th><th>درس</th><th>نوع</th><th>مدت</th><th>مبحث علمی</th><th>نتیجه پارامتری</th><th>کیفیت</th></tr>
-                        </thead>
-                        <tbody id="tableDataRows"></tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="panel-box">
+        <div class="deck-title"><i class="fa-solid fa-chart-gantt"></i>روند مطالعه هفتگی (ساعت)</div>
+        <div class="chart-container"><canvas id="mainWeeklyChart"></canvas></div>
+    </div>
+
+    <div class="panel-box">
+        <div class="deck-title"><i class="fa-solid fa-clock-rotate-left"></i>آخرین فعالیت‌های ثبت‌شده</div>
+        <div style="overflow-x:auto;">
+            <table class="history-table">
+                <thead><tr><th>تاریخ</th><th>درس</th><th>نوع</th><th>مدت</th><th>مبحث علمی</th><th>کارکرد</th></tr></thead>
+                <tbody id="historyTableBody"></tbody>
+            </table>
         </div>
-    </main>
-</div>
-
-<button class="floating-add-btn" onclick="openModal()"><i class="fa-solid fa-plus"></i></button>
-
-<div class="modal-overlay" id="formModal">
-    <div class="modal-content">
-        <button class="close-modal" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></button>
-        <div class="panel-title" style="font-size:15px; margin-bottom:15px;"><i class="fa-solid fa-pen-to-square"></i>ثبت گزارش توصیفی فعالیت جدید</div>
-        
-        <div class="segmented-control">
-            <button type="button" class="active" id="modeStud" onclick="switchEngineMode('study')">مطالعه تشریحی</button>
-            <button type="button" id="modeTest" onclick="switchEngineMode('test')">سنجش تستی</button>
-        </div>
-
-        <form id="coreForm">
-            <div class="form-row">
-                <div class="form-group"><label>تاریخ فعالیت</label><input type="date" id="fDate" required></div>
-                <div class="form-group"><label>انتخاب سرفصل درس</label><select id="fSubject" required></select></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label>مدت زمان (دقیقه)</label><input type="number" id="fDuration" min="1" required placeholder="مثلاً 90"></div>
-                <div class="form-group" id="testFieldsWrapper" style="display:none;">
-                    <label>تعداد تست / درصد پاسخگویی</label>
-                    <div style="display: flex; gap:5px;"><input type="number" id="fTestCount" placeholder="تعداد تست"><input type="number" id="fPercentage" min="-33" max="100" placeholder="درصد ٪"></div>
-                </div>
-            </div>
-            <div class="form-group"><label>مبحث دقیق علمی مطالعه شده</label><input type="text" id="fTopic" required placeholder="مثلاً: حرکت بر خط راست"></div>
-            <div class="form-group"><label>تعداد حل سوالات نهایی/امتحانی</label><input type="number" id="fFinals" value="0"></div>
-            <div class="form-group">
-                <label>سطح کیفیت ذهنی (رنگ فیدبک)</label>
-                <div class="quality-matrix">
-                    <div class="quality-box"><input type="radio" name="fQuality" id="ql1" value="قرمز" checked><label for="ql1" style="background:var(--q-critical)">قرمز</label></div>
-                    <div class="quality-box"><input type="radio" name="fQuality" id="ql2" value="بنفش"><label for="ql2" style="background:var(--q-low)">بنفش</label></div>
-                    <div class="quality-box"><input type="radio" name="fQuality" id="ql3" value="آبی"><label for="ql3" style="background:var(--q-medium)">آبی</label></div>
-                    <div class="quality-box"><input type="radio" name="fQuality" id="ql4" value="سبز"><label for="ql4" style="background:var(--q-high)">سبز</label></div>
-                    <div class="quality-box"><input type="radio" name="fQuality" id="ql5" value="فیروزه‌ای"><label for="ql5" style="background:var(--q-optimal)">فیروزه</label></div>
-                </div>
-            </div>
-            <button type="submit" class="btn-prime" style="background:linear-gradient(135deg, #0369a1, var(--brand-cyan)); color:white; border:none; padding:13px; border-radius:8px; width:100%; font-weight:bold; font-size:14px; cursor:pointer; margin-top:5px;">ذخیره و تزریق داده</button>
-        </form>
     </div>
 </div>
 
+<button class="floating-action-trigger" onclick="openInputForm()"><i class="fa-solid fa-plus"></i></button>
+
+<!-- بخش اختصاصی آنالیز کل درس‌ها -->
+<div class="fullscreen-overlay" id="globalAnalysisOverlay">
+    <div class="overlay-header">
+        <h2><i class="fa-solid fa-chart-pie" style="color:var(--accent-amber)"></i>مقایسه و آنالیز جامع تستی و نهایی</h2>
+        <button class="close-overlay-btn" onclick="closeOverlay('globalAnalysisOverlay')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="panel-box" style="margin-bottom:15px;">
+        <div class="deck-title"><i class="fa-solid fa-chart-line"></i>سنجش تستی کل دروس (تعداد تست)</div>
+        <div class="chart-container"><canvas id="chartGlobalTest"></canvas></div>
+    </div>
+    <div class="panel-box">
+        <div class="deck-title"><i class="fa-solid fa-chart-line"></i>سنجش تشریحی کل دروس (تعداد سوال نهایی)</div>
+        <div class="chart-container"><canvas id="chartGlobalFinal"></canvas></div>
+    </div>
+</div>
+
+<!-- بخش اختصاصی هر درس شامل نمودارها و یادداشت -->
+<div class="fullscreen-overlay" id="subjectOverlay">
+    <div class="overlay-header">
+        <h2 id="subjectOverlayTitle">درس</h2>
+        <button class="close-overlay-btn" onclick="closeOverlay('subjectOverlay')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    
+    <div style="display:flex; flex-direction:column; gap:16px;">
+        <div class="panel-box"><div class="deck-title"><i class="fa-solid fa-chart-line"></i>روند حل تست مخصوص درس</div><div class="chart-container"><canvas id="subChartTest"></canvas></div></div>
+        <div class="panel-box"><div class="deck-title"><i class="fa-solid fa-chart-line"></i>روند حل سوالات نهایی مخصوص درس</div><div class="chart-container"><canvas id="subChartFinal"></canvas></div></div>
+        <div class="panel-box"><div class="deck-title"><i class="fa-solid fa-chart-line"></i>روند پیشرفت کیفیت ذهنی (رنگ‌ها)</div><div class="chart-container"><canvas id="subChartQuality"></canvas></div></div>
+        <div class="panel-box"><div class="deck-title"><i class="fa-solid fa-chart-line"></i>تایم و زمان مطالعه (دقیقه)</div><div class="chart-container"><canvas id="subChartTime"></canvas></div></div>
+        
+        <div class="panel-box">
+            <div class="deck-title"><i class="fa-solid fa-book-open"></i>یادداشت‌های اختصاصی روزانه این درس</div>
+            <textarea class="note-area" id="subjectNoteInput" rows="3" placeholder="امروز چطور گذشت؟ چالش‌ها و نکات مثبت را بنویس..."></textarea>
+            <button class="btn-action" onclick="saveSubjectNote()">ثبت یادداشت امروز</button>
+            <div class="journal-log" id="subjectJournalLog"></div>
+        </div>
+    </div>
+</div>
+
+<!-- فرم پاپ آپ ثبت اطلاعات جدید -->
+<div class="fullscreen-overlay" id="inputFormOverlay">
+    <div class="overlay-header">
+        <h2><i class="fa-solid fa-pen-nib"></i>ثبت گزارش عملکرد روزانه</h2>
+        <button class="close-overlay-btn" onclick="closeOverlay('inputFormOverlay')"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="toggle-switch">
+        <button id="btnModeStudy" class="active" onclick="setFormMode('study')">مطالعه تشریحی</button>
+        <button id="btnModeTest" onclick="setFormMode('test')">سنجش تستی</button>
+    </div>
+    <form id="dataForm">
+        <div class="form-element"><label>تاریخ فعالیت (شمسی - مثال: 1405/03/19)</label><input type="text" id="insDate" required></div>
+        <div class="form-element"><label>انتخاب درس</label><select id="insSubject" required></select></div>
+        <div class="form-element"><label>مدت زمان فعالیت (دقیقه)</label><input type="number" id="insDuration" min="1" required placeholder="مثلاً 90"></div>
+        <div id="formTestBox" style="display:none; gap:8px; margin-bottom:12px;">
+            <div class="form-element" style="flex:1;"><label>تعداد تست</label><input type="number" id="insTests" value="0"></div>
+            <div class="form-element" style="flex:1;"><label>درصد مکتسبه ٪</label><input type="number" id="insPercent" min="-33" max="100" value="0"></div>
+        </div>
+        <div class="form-element" id="formFinalBox"><label>تعداد حل سوالات نهایی/امتحانی</label><input type="number" id="insFinals" value="0"></div>
+        <div class="form-element"><label>مبحث دقیق علمی مطالعه شده</label><input type="text" id="insTopic" required placeholder="مثال: دینامیک یا ساختار اتم"></div>
+        <div class="form-element">
+            <label>کیفیت ذهنی و تمرکز</label>
+            <div class="quality-row">
+                <input type="radio" name="insQual" id="q1" value="1" checked><label for="q1" style="background:#ef4444;">قرمز</label>
+                <input type="radio" name="insQual" id="q2" value="2"><label for="q2" style="background:#a855f7;">بنفش</label>
+                <input type="radio" name="insQual" id="q3" value="3"><label for="q3" style="background:#3b82f6;">آبی</label>
+                <input type="radio" name="insQual" id="q4" value="4"><label for="q4" style="background:#10b981;">سبز</label>
+                <input type="radio" name="insQual" id="q5" value="5"><label for="q5" style="background:#06b6d4;">فیروزه</label>
+            </div>
+        </div>
+        <button type="submit" class="btn-action">تزریق و ثبت نهایی داده‌ها</button>
+    </form>
+</div>
+
 <script>
-    const EXPERT_SUBJECTS = ['زیست‌شناسی', 'شیمی', 'فیزیک', 'ریاضیات', 'فارسی', 'دینی', 'عربی', 'زبان', 'سایر'];
-    let currentEngineMode = 'study'; let focusedSubject = 'زیست‌شناسی';
-    let appDatabase = JSON.parse(localStorage.getItem('EnterpriseStudyDB_v5')) || [];
-    const qColors = { 'قرمز': '#ef4444', 'بنفش': '#a855f7', 'آبی': '#3b82f6', 'سبز': '#10b981', 'فیروزه‌ای': '#06b6d4' };
-    let instanceGlobalChart = null; let instanceSubjectChart = null;
-
-    function openModal() { document.getElementById('formModal').classList.add('active'); }
-    function closeModal() { document.getElementById('formModal').classList.remove('active'); }
-
-    function systemBoot() {
-        const selSub = document.getElementById('fSubject');
-        EXPERT_SUBJECTS.forEach(s => { selSub.innerHTML += `<option value="${s}">${s}</option>`; });
-        document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
-        processRenderFlow();
+    function getPersianToday() {
+        return new Intl.DateTimeFormat('fa-IR-u-nu-latn', {dateStyle: 'short'}).format(new Date());
     }
 
-    function switchEngineMode(mode) {
-        currentEngineMode = mode;
-        const wrapper = document.getElementById('testFieldsWrapper');
+    const MAIN_SUBJECTS = ['زیست‌شناسی', 'شیمی', 'فیزیک', 'ریاضیات', 'فارسی', 'دینی', 'عربی', 'زبان', 'سایر'];
+    const qualityColors = {1: '#ef4444', 2: '#a855f7', 3: '#3b82f6', 4: '#10b981', 5: '#06b6d4'};
+    const qualityLabels = {1: 'قرمز', 2: 'بنفش', 3: 'آبی', 4: 'سبز', 5: 'فیروزه‌ای'};
+
+    let localDatabase = JSON.parse(localStorage.getItem('KonkurProEngine_v8')) || [];
+    let notebookDatabase = JSON.parse(localStorage.getItem('KonkurProNotebook_v8')) || {};
+    let activeFormMode = 'study';
+    let selectedSubjectForAnalysis = '';
+
+    let chartInstances = {};
+
+    function openInputForm() {
+        document.getElementById('inputFormOverlay').classList.add('active');
+        document.getElementById('insDate').value = getPersianToday();
+    }
+    function closeOverlay(id) { document.getElementById(id).classList.remove('active'); }
+
+    function setFormMode(mode) {
+        activeFormMode = mode;
         if(mode === 'test') {
-            document.getElementById('modeTest').classList.add('active'); document.getElementById('modeStud').classList.remove('active');
-            wrapper.style.display = 'block';
+            document.getElementById('btnModeTest').classList.add('active'); document.getElementById('btnModeStudy').classList.remove('active');
+            document.getElementById('formTestBox').style.display = 'flex'; document.getElementById('formFinalBox').style.display = 'none';
         } else {
-            document.getElementById('modeStud').classList.add('active'); document.getElementById('modeTest').classList.remove('active');
-            wrapper.style.display = 'none';
+            document.getElementById('btnModeStudy').classList.add('active'); document.getElementById('btnModeTest').classList.remove('active');
+            document.getElementById('formTestBox').style.display = 'none'; document.getElementById('formFinalBox').style.display = 'block';
         }
     }
 
-    document.getElementById('coreForm').addEventListener('submit', function(e) {
+    function initSystem() {
+        const scroller = document.getElementById('subjectScroller');
+        const selectElement = document.getElementById('insSubject');
+        MAIN_SUBJECTS.forEach(sub => {
+            selectElement.innerHTML += `<option value="${sub}">${sub}</option>`;
+            scroller.innerHTML += `<div class="sub-chip" onclick="openSubjectPanel('${sub}')"><i class="fa-solid fa-graduation-cap"></i><span>${sub}</span></div>`;
+        });
+        refreshDashboardData();
+    }
+
+    document.getElementById('dataForm').addEventListener('submit', function(e){
         e.preventDefault();
-        const selectedQuality = document.querySelector('input[name="fQuality"]:checked').value;
-        const record = {
-            uid: 'REC-' + Date.now(), date: document.getElementById('fDate').value, mode: currentEngineMode,
-            subject: document.getElementById('fSubject').value, duration: parseInt(document.getElementById('fDuration').value),
-            percentage: currentEngineMode === 'test' ? parseInt(document.getElementById('fPercentage').value) : null,
-            testCount: currentEngineMode === 'test' ? parseInt(document.getElementById('fTestCount').value) : 0,
-            topic: document.getElementById('fTopic').value, finals: parseInt(document.getElementById('fFinals').value) || 0, quality: selectedQuality
+        const qualVal = parseInt(document.querySelector('input[name="insQual"]:checked').value);
+        const log = {
+            id: 'L-' + Date.now(), date: document.getElementById('insDate').value,
+            subject: document.getElementById('insSubject').value, duration: parseInt(document.getElementById('insDuration').value),
+            mode: activeFormMode, topic: document.getElementById('insTopic').value, quality: qualVal,
+            tests: activeFormMode === 'test' ? parseInt(document.getElementById('insTests').value) : 0,
+            percent: activeFormMode === 'test' ? parseInt(document.getElementById('insPercent').value) : null,
+            finals: activeFormMode === 'study' ? parseInt(document.getElementById('insFinals').value) : 0
         };
-        appDatabase.push(record);
-        localStorage.setItem('EnterpriseStudyDB_v5', JSON.stringify(appDatabase));
-        closeModal();
-        document.getElementById('fDuration').value = ''; document.getElementById('fTopic').value = '';
-        processRenderFlow();
+        localDatabase.push(log);
+        localStorage.setItem('KonkurProEngine_v8', JSON.stringify(localDatabase));
+        closeOverlay('inputFormOverlay');
+        document.getElementById('insDuration').value = ''; document.getElementById('insTopic').value = '';
+        refreshDashboardData();
     });
 
-    function changeFocusedSubject(subj) {
-        focusedSubject = subj;
-        document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('active'));
-        if(document.getElementById(`card-row-${subj}`)) document.getElementById(`card-row-${subj}`).classList.add('active');
-        document.getElementById('lblSubjectChart').innerHTML = `<i class="fa-solid fa-chart-column"></i> روند درس: ${subj}`;
-        renderAdvancedCharts();
+    function refreshDashboardData() {
+        const uniqueDates = [...new Set(localDatabase.map(r => r.date))];
+        document.getElementById('topStreak').innerText = `${uniqueDates.length} روز`;
+        
+        let totalMinutes = localDatabase.reduce((s, r) => s + r.duration, 0);
+        document.getElementById('topHours').innerText = `${(totalMinutes/60).toFixed(1)} ساعت`;
+        document.getElementById('topTests').innerText = localDatabase.reduce((s, r) => s + r.tests, 0);
+        document.getElementById('topFinals').innerText = localDatabase.reduce((s, r) => s + r.finals, 0);
+
+        const tbody = document.getElementById('historyTableBody'); tbody.innerHTML = '';
+        [...localDatabase].reverse().slice(0, 8).forEach(r => {
+            let detail = r.mode === 'test' ? `${r.tests} تست (${r.percent}٪)` : `${r.finals} نهایی`;
+            tbody.innerHTML += `<tr><td>${r.date}</td><td>${r.subject}</td><td>${r.mode === 'test' ? 'تستی' : 'تشریحی'}</td><td>${r.duration}m</td><td>${r.topic}</td><td>${detail}</td></tr>`;
+        });
+
+        renderMainDashboardCharts();
     }
 
-    function calculateStudyStreak() {
-        if (appDatabase.length === 0) return 0;
-        const uniqueDates = [...new Set(appDatabase.map(r => r.date))].sort((a, b) => new Date(b) - new Date(a));
-        let streak = 0;
-        let today = new Date().toISOString().split('T')[0];
-        let yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-        if (uniqueDates[0] !== today && uniqueDates[0] !== yesterday) return 0;
-        let checkDate = new Date(uniqueDates[0]);
-        for (let i = 0; i < uniqueDates.length; i++) {
-            let diff = (new Date(uniqueDates[i]) - checkDate) / (1000 * 60 * 60 * 24);
-            if (i === 0 || diff === 0 || diff === -1) { streak++; checkDate = new Date(uniqueDates[i]); } else { break; }
+    function renderMainDashboardCharts() {
+        const dailyTotals = {}; localDatabase.forEach(r => { dailyTotals[r.date] = (dailyTotals[r.date] || 0) + (r.duration / 60); });
+        const datesSorted = Object.keys(dailyTotals).sort();
+        
+        if(chartInstances['mainDaily']) chartInstances['mainDaily'].destroy();
+        chartInstances['mainDaily'] = new Chart(document.getElementById('mainDailyChart').getContext('2d'), {
+            type: 'line', data: { labels: datesSorted, datasets: [{ label: 'ساعت', data: datesSorted.map(d => dailyTotals[d]), borderColor: '#38bdf8', backgroundColor: 'rgba(56,189,248,0.1)', fill: true, tension: 0.2, borderWidth: 3 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#1e2943' } }, x: { grid: { color: '#1e2943' } } } }
+        });
+
+        // شبیه‌ساز روند هفتگی (برش ۷تایی داده‌ها)
+        let weekLabels = []; let weekData = [];
+        for (let i = 0; i < datesSorted.length; i += 7) {
+            let slice = datesSorted.slice(i, i + 7);
+            let sum = slice.reduce((s, d) => s + dailyTotals[d], 0);
+            weekLabels.push(`هفته ${Math.floor(i/7) + 1}`); weekData.push(sum);
         }
-        return streak;
-    }
-
-    function processRenderFlow() {
-        document.getElementById('streakCount').innerText = calculateStudyStreak();
-        const minutes = appDatabase.reduce((acc, curr) => acc + curr.duration, 0);
-        document.getElementById('mTotalHours').innerText = `${(minutes / 60).toFixed(1)}h`;
-        document.getElementById('mTotalTests').innerText = appDatabase.reduce((acc, curr) => acc + (curr.testCount || 0), 0);
-        document.getElementById('mTotalFinals').innerText = appDatabase.reduce((acc, curr) => acc + (curr.finals || 0), 0);
-        const tests = appDatabase.filter(r => r.mode === 'test');
-        document.getElementById('mAvgPercent').innerText = tests.length > 0 ? `${Math.round(tests.reduce((acc, curr) => acc + curr.percentage, 0) / tests.length)}٪` : '0٪';
-
-        const container = document.getElementById('subjectRowsContainer'); container.innerHTML = '';
-        EXPERT_SUBJECTS.forEach(subj => {
-            const matches = appDatabase.filter(r => r.subject === subj);
-            const mMinutes = matches.reduce((acc, curr) => acc + curr.duration, 0);
-            const activeClass = subj === focusedSubject ? 'active' : '';
-            container.innerHTML += `<div class="subject-card ${activeClass}" id="card-row-${subj}" onclick="changeFocusedSubject('${subj}')"><div class="subject-card-meta"><span>${subj}</span><span>${(mMinutes/60).toFixed(1)}h</span></div></div>`;
-        });
-
-        const tbody = document.getElementById('tableDataRows'); tbody.innerHTML = '';
-        appDatabase.sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 10).forEach(r => {
-            const out = r.mode === 'test' ? `${r.testCount} تست (${r.percentage}٪)` : `نهایی: ${r.finals}`;
-            tbody.innerHTML += `<tr><td>${r.date}</td><td>${r.subject}</td><td>${r.mode==='test'?'تستی':'تشریحی'}</td><td>${r.duration}m</td><td style="font-weight:bold;">${r.topic}</td><td>${out}</td><td><span style="color:${qColors[r.quality]}">●</span> ${r.quality}</td></tr>`;
-        });
-
-        renderAdvancedCharts();
-    }
-
-    function renderAdvancedCharts() {
-        const timeline = {}; appDatabase.forEach(r => { timeline[r.date] = (timeline[r.date] || 0) + (r.duration / 60); });
-        const datesSorted = Object.keys(timeline).sort((a,b) => new Date(a) - new Date(b));
-        if(instanceGlobalChart) instanceGlobalChart.destroy();
-        instanceGlobalChart = new Chart(document.getElementById('canvasGlobal').getContext('2d'), {
-            type: 'line', data: { labels: datesSorted, datasets: [{ data: datesSorted.map(d => timeline[d]), borderColor: '#0284c7', fill: false, tension: 0.2, borderWidth: 2 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-        });
-
-        const recordsFocus = appDatabase.filter(r => r.subject === focusedSubject).sort((a,b) => new Date(a.date) - new Date(b.date));
-        if(instanceSubjectChart) instanceSubjectChart.destroy();
-        instanceSubjectChart = new Chart(document.getElementById('canvasSubject').getContext('2d'), {
-            type: 'bar', data: { labels: recordsFocus.map((r, i) => `${r.date.substring(5)}`), datasets: [{ data: recordsFocus.map(r => r.mode === 'test' ? r.percentage : r.duration), backgroundColor: recordsFocus.map(r => qColors[r.quality]) }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        if(chartInstances['mainWeekly']) chartInstances['mainWeekly'].destroy();
+        chartInstances['mainWeekly'] = new Chart(document.getElementById('mainWeeklyChart').getContext('2d'), {
+            type: 'line', data: { labels: weekLabels, datasets: [{ data: weekData, borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.1)', fill: true, tension: 0.2, borderWidth: 3 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#1e2943' } }, x: { grid: { color: '#1e2943' } } } }
         });
     }
 
-    window.onload = systemBoot;
+    function openGlobalAnalysis() {
+        document.getElementById('globalAnalysisOverlay').classList.add('active');
+        let datasetTest = []; let datasetFinal = [];
+        MAIN_SUBJECTS.forEach(sub => {
+            let filter = localDatabase.filter(r => r.subject === sub);
+            datasetTest.push(filter.reduce((s, r) => s + r.tests, 0));
+            datasetFinal.push(filter.reduce((s, r) => s + r.finals, 0));
+        });
+
+        if(chartInstances['gTest']) chartInstances['gTest'].destroy();
+        chartInstances['gTest'] = new Chart(document.getElementById('chartGlobalTest').getContext('2d'), {
+            type: 'line', data: { labels: MAIN_SUBJECTS, datasets: [{ label: 'تعداد تست کل', data: datasetTest, borderColor: '#fbbf24', tension: 0.2, borderWidth: 3, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#1e2943' } } } }
+        });
+
+        if(chartInstances['gFinal']) chartInstances['gFinal'].destroy();
+        chartInstances['gFinal'] = new Chart(document.getElementById('chartGlobalFinal').getContext('2d'), {
+            type: 'line', data: { labels: MAIN_SUBJECTS, datasets: [{ label: 'تعداد سوال امتحانی نهایی', data: datasetFinal, borderColor: '#c084fc', tension: 0.2, borderWidth: 3, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: '#1e2943' } } } }
+        });
+    }
+
+    function openSubjectPanel(subject) {
+        selectedSubjectForAnalysis = subject;
+        document.getElementById('subjectOverlayTitle').innerHTML = `<i class="fa-solid fa-graduation-cap" style="color:var(--accent-cyan)"></i> ارزیابی پیشرفته درس: ${subject}`;
+        document.getElementById('subjectOverlay').classList.add('active');
+        renderSubjectSpecificCharts(subject);
+        loadSubjectNotes(subject);
+    }
+
+    function renderSubjectSpecificCharts(subject) {
+        let matches = localDatabase.filter(r => r.subject === subject).sort((a,b) => a.date.localeCompare(b.date));
+        let labels = matches.map(r => r.date);
+
+        if(chartInstances['subTest']) chartInstances['subTest'].destroy();
+        chartInstances['subTest'] = new Chart(document.getElementById('subChartTest').getContext('2d'), {
+            type: 'line', data: { labels: labels, datasets: [{ label: 'تعداد تست', data: matches.map(r => r.tests), borderColor: '#fbbf24', tension: 0.1, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        if(chartInstances['subFinal']) chartInstances['subFinal'].destroy();
+        chartInstances['subFinal'] = new Chart(document.getElementById('subChartFinal').getContext('2d'), {
+            type: 'line', data: { labels: labels, datasets: [{ label: 'سوال نهایی', data: matches.map(r => r.finals), borderColor: '#c084fc', tension: 0.1, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        if(chartInstances['subQual']) chartInstances['subQual'].destroy();
+        chartInstances['subQual'] = new Chart(document.getElementById('subChartQuality').getContext('2d'), {
+            type: 'line', data: { labels: labels, datasets: [{ label: 'سطح تمرکز (1تا5)', data: matches.map(r => r.quality), borderColor: '#ef4444', tension: 0.1, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        if(chartInstances['subTime']) chartInstances['subTime'].destroy();
+        chartInstances['subTime'] = new Chart(document.getElementById('subChartTime').getContext('2d'), {
+            type: 'line', data: { labels: labels, datasets: [{ label: 'مدت (دقیقه)', data: matches.map(r => r.duration), borderColor: '#38bdf8', tension: 0.1, fill: false }] },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    function loadSubjectNotes(subject) {
+        const logBox = document.getElementById('subjectJournalLog'); logBox.innerHTML = '';
+        let list = notebookDatabase[subject] || [];
+        [...list].reverse().forEach(n => {
+            logBox.innerHTML += `<div class="journal-item"><div class="journal-date">${n.date}</div><div>${n.text}</div></div>`;
+        });
+    }
+
+    function saveSubjectNote() {
+        const textStr = document.getElementById('subjectNoteInput').value.trim();
+        if(!textStr) return;
+        if(!notebookDatabase[selectedSubjectForAnalysis]) notebookDatabase[selectedSubjectForAnalysis] = [];
+        notebookDatabase[selectedSubjectForAnalysis].push({ date: getPersianToday(), text: textStr });
+        localStorage.setItem('KonkurProNotebook_v8', JSON.stringify(notebookDatabase));
+        document.getElementById('subjectNoteInput').value = '';
+        loadSubjectNotes(selectedSubjectForAnalysis);
+    }
+
+    window.onload = initSystem;
 </script>
 </body>
 </html>
